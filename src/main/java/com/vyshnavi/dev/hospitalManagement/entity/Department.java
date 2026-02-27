@@ -20,17 +20,17 @@ public class Department {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false,unique = true,length=50)
+    @Column(nullable = false, unique = true, length = 50)
     private String name;
 
     @OneToOne
     private Doctor headDoctor;
 
-    @ManyToMany // creates joint table
+    @ManyToMany
     @JoinTable(
-            name = "my_dpt_doctors",
-            joinColumns = @JoinColumn(name = "dpt_id"),
-            inverseJoinColumns = @JoinColumn(name="doctor_id")
+            name = "department_doctors",
+            joinColumns = @JoinColumn(name = "department_id"),
+            inverseJoinColumns = @JoinColumn(name = "doctor_id")
     )
-    private Set<Doctor> doctors=new HashSet<>();
+    private Set<Doctor> doctors = new HashSet<>();
 }

@@ -16,23 +16,23 @@ public class PatientService {
     private final PatientRepository patientRepository;
 
     @Transactional(readOnly = true)
-    public Patient getPatientById(Long id){
+    public Patient getPatientById(Long id) {
         return patientRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
     }
 
     @Transactional(readOnly = true)
-    public List<Patient> getAllPatients(){
+    public List<Patient> getAllPatients() {
         return patientRepository.findAll();
     }
 
     @Transactional
-    public Patient createPatient(Patient patient){
+    public Patient createPatient(Patient patient) {
         return patientRepository.save(patient);
     }
 
     @Transactional
-    public Patient updatePatient(Long id, Patient updated){
+    public Patient updatePatient(Long id, Patient updated) {
         Patient existing = patientRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
 
@@ -41,14 +41,13 @@ public class PatientService {
         existing.setEmail(updated.getEmail());
         existing.setGender(updated.getGender());
         existing.setBloodGroup(updated.getBloodGroup());
-        // insurance and appointments updates can be added as needed
 
         return patientRepository.save(existing);
     }
 
     @Transactional
-    public void deletePatient(Long id){
-        if(!patientRepository.existsById(id)){
+    public void deletePatient(Long id) {
+        if (!patientRepository.existsById(id)) {
             throw new ResourceNotFoundException("Patient not found with id: " + id);
         }
         patientRepository.deleteById(id);

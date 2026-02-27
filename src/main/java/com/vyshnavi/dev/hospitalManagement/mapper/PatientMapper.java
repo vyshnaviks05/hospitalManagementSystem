@@ -8,19 +8,26 @@ import org.springframework.stereotype.Component;
 @Component
 public class PatientMapper {
 
-    public Patient toEntity(PatientRequestDto d){
-        if(d == null) return null;
-        Patient p = new Patient();
-        p.setName(d.getName());
-        p.setBirthDate(d.getBirthDate());
-        p.setEmail(d.getEmail());
-        p.setGender(d.getGender());
-        p.setBloodGroup(d.getBloodGroup());
-        return p;
+    public Patient toEntity(PatientRequestDto dto) {
+        if (dto == null) return null;
+        Patient patient = new Patient();
+        patient.setName(dto.getName());
+        patient.setBirthDate(dto.getBirthDate());
+        patient.setEmail(dto.getEmail());
+        patient.setGender(dto.getGender());
+        patient.setBloodGroup(dto.getBloodGroup());
+        return patient;
     }
 
-    public PatientResponseDto toResponseDto(Patient p){
-        if(p == null) return null;
-        return new PatientResponseDto(p.getId(), p.getName(), p.getBirthDate(), p.getEmail(), p.getGender(), p.getBloodGroup());
+    public PatientResponseDto toResponseDto(Patient patient) {
+        if (patient == null) return null;
+        return new PatientResponseDto(
+                patient.getId(),
+                patient.getName(),
+                patient.getBirthDate(),
+                patient.getEmail(),
+                patient.getGender(),
+                patient.getBloodGroup()
+        );
     }
 }

@@ -5,13 +5,14 @@ import com.vyshnavi.dev.hospitalManagement.entity.Insurance;
 import com.vyshnavi.dev.hospitalManagement.entity.Patient;
 import com.vyshnavi.dev.hospitalManagement.service.AppointmentService;
 import com.vyshnavi.dev.hospitalManagement.service.InsuranceService;
-import org.aspectj.weaver.ast.Var;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 public class InsuranceTests {
@@ -23,23 +24,35 @@ public class InsuranceTests {
     private AppointmentService appointmentService;
 
     @Test
-    public void testInsurance(){
-        Insurance insurance=Insurance.builder().policyNumber("HDFC1234").provider("HDFC").validUntil(LocalDate.of(2027,9,1)).build();
-        var patient=insuranceService.assignInsuranceToPatient(insurance,1L);
-        System.out.println(patient);
+    public void testAssignAndRemoveInsurance() {
+        Insurance insurance = Insurance.builder()
+                .policyNumber("HDFC1234")
+                .provider("HDFC")
+                .validUntil(LocalDate.of(2027, 9, 1))
+                .build();
 
-        var newPatient=insuranceService.disassociateInsuranceToPatient(patient.getId());
-        System.out.println(newPatient);
+        Patient patientWithInsurance = insuranceService.assignInsuranceToPatient(insurance, 1L);
+        assertThat(patientWithInsurance.getInsurance()).isNotNull();
+        System.out.println(patientWithInsurance);
 
+        Patient patientWithoutInsurance = insuranceService.removeInsuranceFromPatient(patientWithInsurance.getId());
+        assertThat(patientWithoutInsurance.getInsurance()).isNull();
+        System.out.println(patientWithoutInsurance);
     }
 
     @Test
-    public void testAppointment(){
-        Appointment appointment=Appointment.builder().appointmentTime(LocalDateTime.of(2025,12,6,11,45)).reason("Skin Allergy").build();
-        var newAppointment=appointmentService.createNewAppointment(appointment,3L,4L);
-        System.out.println(newAppointment);
+    public void testCreateAndReassignAppointment() {
+        Appointment appointment = Appointment.builder()
+                .appointmentTime(LocalDateTime.of(2025, 12, 6, 11, 45))
+                .reason("Skin Allergy")
+                .build();
 
-        var updatedAppointment=appointmentService.reassignAppointmentToAnotherDoctor(newAppointment.getId(), 2L);
-        System.out.println(updatedAppointment);
+        Appointment created = appointmentService.createNewAppointment(appointment, 3L, 4L);
+        assertThat(created.getId()).isNotNull();
+        System.out.println(created);
+
+        Appointment reassigned = appointmentService.reassignAppointmentToAnotherDoctor(created.getId(), 2L);
+        assertThat(reassigned.getDoctor().getId()).isEqualTo(2L);
+        System.out.println(reassigned);
     }
 }

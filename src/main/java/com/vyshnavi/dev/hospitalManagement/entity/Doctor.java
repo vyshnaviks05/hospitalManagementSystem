@@ -20,19 +20,19 @@ public class Doctor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false,length=100)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column(length = 100)
     private String specialization;
 
-    @Column(nullable = false,unique = true,length=100)
+    @Column(nullable = false, unique = true, length = 100)
     private String email;
 
     @ManyToMany(mappedBy = "doctors")
-    private Set<Department> departments=new HashSet<>();
+    private Set<Department> departments = new HashSet<>();
 
-    @ManyToMany(mappedBy = "doctor")
-    private List<Appointment> appointments=new ArrayList<>();
+    // FIX: Appointment has a @ManyToOne to Doctor, so this must be @OneToMany — not @ManyToMany
+    @OneToMany(mappedBy = "doctor")
+    private List<Appointment> appointments = new ArrayList<>();
 }
-
