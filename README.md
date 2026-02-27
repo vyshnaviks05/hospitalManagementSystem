@@ -64,6 +64,10 @@ src/main/java/com/vyshnavi/dev/hospitalManagement/
 
 ## 🔗 Entity Relationships
 
+![ER Diagram](docs/er-diagram.png)
+
+> Entity diagram generated from DBeaver showing all tables and relationships in the `hospitalDB` PostgreSQL database.
+
 ```
 Patient  ──(1:1)──  Insurance
 Patient  ──(1:N)──  Appointment  ──(N:1)──  Doctor
