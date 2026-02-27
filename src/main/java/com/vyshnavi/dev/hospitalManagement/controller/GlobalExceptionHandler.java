@@ -19,27 +19,31 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Object> handleNotFound(ResourceNotFoundException ex){
-        Map<String,String> body = new HashMap<>();
-        body.put("error","Not Found");
+    public ResponseEntity<Object> handleNotFound(ResourceNotFoundException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", "Not Found");
         body.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-                                                                  HttpHeaders headers,
-                                                                  HttpStatusCode status,
-                                                                  WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+
         Map<String, Object> body = new HashMap<>();
         body.put("error", "Validation Failed");
+
         Map<String, String> fieldErrors = ex.getBindingResult().getFieldErrors()
-            .stream()
-            .collect(Collectors.toMap(
-                fe -> fe.getField(),
-                fe -> fe.getDefaultMessage(),
-                (existing, replacement) -> existing
-            ));
+                .stream()
+                .collect(Collectors.toMap(
+                        fe -> fe.getField(),
+                        fe -> fe.getDefaultMessage(),
+                        (existing, replacement) -> existing
+                ));
+
         body.put("fieldErrors", fieldErrors);
         return ResponseEntity.badRequest().body(body);
     }

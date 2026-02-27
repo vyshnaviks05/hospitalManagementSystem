@@ -20,20 +20,21 @@ public class Insurance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false,unique = true,length=50)
+    @Column(nullable = false, unique = true, length = 50)
     private String policyNumber;
 
-    @Column(nullable = false,length = 100)
+    @Column(nullable = false, length = 100)
     private String provider;
 
     @Column(nullable = false)
     private LocalDate validUntil;
 
     @CreationTimestamp
-    @Column(nullable = false,updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToOne(mappedBy="insurance")//inverse side
+    // Inverse side of the OneToOne — no foreign key here
+    @OneToOne(mappedBy = "insurance")
     @ToString.Exclude
     private Patient patient;
 }

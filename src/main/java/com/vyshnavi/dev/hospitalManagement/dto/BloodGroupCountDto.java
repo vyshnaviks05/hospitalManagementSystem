@@ -4,13 +4,12 @@ import com.vyshnavi.dev.hospitalManagement.entity.type.BloodGroupType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
+// Renamed from BloodGroupCountResponseEntity — avoids confusion with Spring's ResponseEntity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-public class BloodGroupCountResponseEntity {
+public class BloodGroupCountDto {
 
     private BloodGroupType bloodGroupType;
     private Long count;

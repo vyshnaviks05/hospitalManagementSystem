@@ -1,6 +1,5 @@
 package com.vyshnavi.dev.hospitalManagement.entity;
 
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,11 +25,11 @@ public class Appointment {
     private String reason;
 
     @ManyToOne
-    @JoinColumn(name="patient_id", nullable = false)
+    @JoinColumn(name = "patient_id", nullable = false)
     @ToString.Exclude
     private Patient patient;
 
-    @ManyToOne(fetch =FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     @ToString.Exclude
     private Doctor doctor;
