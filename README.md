@@ -293,4 +293,4 @@ Integration tests are written with `@SpringBootTest` to exercise the full applic
 ## Author
 
 **Kotha Sree Vyshnavi**  
-[GitHub](https://github.com/your-username) · [LinkedIn](https://linkedin.com/in/your-linkedin)
+[LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
