@@ -1,33 +1,10 @@
-# 🏥 Hospital Management System
+# Hospital Management System
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Spring_Boot-3.5.8-6DB33F?style=for-the-badge&logo=springboot&logoColor=white"/>
-  <img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Hibernate-59666C?style=for-the-badge&logo=hibernate&logoColor=white"/>
-</p>
-
-A **RESTful backend application** built with Java 21 and Spring Boot 3 that manages core hospital operations — patients, doctors, appointments, departments, and insurance.
+A production-ready RESTful backend built with **Java 21** and **Spring Boot 3**, designed to manage core hospital operations including patients, doctors, appointments, departments, and insurance.
 
 ---
 
-## 📋 Table of Contents
-
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Entity Relationships](#-entity-relationships)
-- [REST API Endpoints](#-rest-api-endpoints)
-- [Key Features](#-key-features)
-- [Custom Repository Queries](#-custom-repository-queries)
-- [Setup & Run](#-setup--run)
-- [Seed Data](#-seed-data)
-- [Testing](#-testing)
-- [Future Improvements](#-future-improvements)
-
----
-
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -42,79 +19,81 @@ A **RESTful backend application** built with Java 21 and Spring Boot 3 that mana
 
 ---
 
-## 📁 Project Structure
+## Architecture Overview
+
+The application follows a standard **layered architecture** with a clean separation of concerns across the Controller, Service, and Repository layers. Input and output are decoupled from JPA entities using dedicated DTOs, and all exceptions are handled centrally via `@RestControllerAdvice`.
 ```
 src/main/java/com/vyshnavi/dev/hospitalManagement/
 │
 ├── controller/
 │   ├── PatientController.java              # REST endpoints for patient CRUD
-│   └── GlobalExceptionHandler.java         # Centralized exception handling (@RestControllerAdvice)
+│   └── GlobalExceptionHandler.java         # Centralized exception handling
 │
 ├── service/
 │   ├── PatientService.java                 # Patient CRUD business logic
-│   ├── InsuranceService.java               # Assign / remove insurance from patient
-│   └── AppointmentService.java             # Create appointment & reassign to another doctor
+│   ├── InsuranceService.java               # Assign and remove patient insurance
+│   └── AppointmentService.java             # Create and reassign appointments
 │
 ├── repository/
-│   ├── PatientRepository.java              # Custom JPQL, native SQL, pagination, bulk update queries
+│   ├── PatientRepository.java              # JPQL, native SQL, pagination, bulk update queries
 │   ├── DoctorRepository.java
 │   ├── AppointmentRepository.java
 │   ├── DepartmentRepository.java
 │   └── InsuranceRepository.java
 │
 ├── entity/
-│   ├── Patient.java                        # Core entity with constraints & JPA relationships
-│   ├── Doctor.java                         # Specialization, departments, appointments
-│   ├── Appointment.java                    # Links Patient ↔ Doctor with time and reason
-│   ├── Department.java                     # Has a head doctor + many doctors (ManyToMany)
-│   ├── Insurance.java                      # OneToOne with Patient (policy, provider, validity)
-│   └── type/BloodGroupType.java            # Enum: A_POS, A_NEG, B_POS, B_NEG...
+│   ├── Patient.java
+│   ├── Doctor.java
+│   ├── Appointment.java
+│   ├── Department.java
+│   ├── Insurance.java
+│   └── type/BloodGroupType.java            # Enum: A_POS, A_NEG, B_POS, B_NEG ...
 │
 ├── dto/
-│   ├── PatientRequestDto.java              # Input DTO with Bean Validation annotations
-│   ├── PatientResponseDto.java             # Output DTO (id, name, birthDate, email, gender, bloodGroup)
-│   └── BloodGroupCountDto.java             # DTO projection for grouped blood group query
+│   ├── PatientRequestDto.java
+│   ├── PatientResponseDto.java
+│   └── BloodGroupCountDto.java             # Projection for blood group aggregation query
 │
 ├── mapper/
 │   └── PatientMapper.java                  # Manual DTO ↔ Entity conversion
 │
 └── exception/
-    └── ResourceNotFoundException.java      # Custom runtime exception (404)
+    └── ResourceNotFoundException.java      # Custom 404 runtime exception
 ```
 
 ---
 
-## 🔗 Entity Relationships
+## Data Model
 ```
-Patient  ──(1:1)──  Insurance
-Patient  ──(1:N)──  Appointment  ──(N:1)──  Doctor
-Department  ──(M:N)──  Doctor              [join table: department_doctors]
-Department  ──(1:1)──  Doctor              [head doctor]
+Patient       ──(1:1)──  Insurance
+Patient       ──(1:N)──  Appointment  ──(N:1)──  Doctor
+Department    ──(M:N)──  Doctor                  [join table: department_doctors]
+Department    ──(1:1)──  Doctor                  [head doctor]
 ```
 
-| Relationship | Entities | Owner Side |
+| Relationship | Entities | Owning Side |
 |---|---|---|
-| OneToOne | Patient ↔ Insurance | Patient (`@JoinColumn: patient_insurance_id`) |
-| OneToMany / ManyToOne | Patient ↔ Appointment | Appointment (`@JoinColumn: patient_id`) |
-| OneToMany / ManyToOne | Doctor ↔ Appointment | Appointment (`@JoinColumn: doctor_id`) |
-| ManyToMany | Department ↔ Doctor | Department (`@JoinTable: department_doctors`) |
-| OneToOne | Department → Doctor (head) | Department |
+| `@OneToOne` | Patient ↔ Insurance | Patient (`patient_insurance_id`) |
+| `@OneToMany` / `@ManyToOne` | Patient ↔ Appointment | Appointment (`patient_id`) |
+| `@OneToMany` / `@ManyToOne` | Doctor ↔ Appointment | Appointment (`doctor_id`) |
+| `@ManyToMany` | Department ↔ Doctor | Department (`department_doctors`) |
+| `@OneToOne` | Department → Doctor (head) | Department |
 
 ---
 
-## 🚀 REST API Endpoints
+## API Reference
 
-### Patient — `/api/patients`
+### Patient Endpoints — `/api/patients`
 
-| Method | Endpoint | Description | Response |
+| Method | Endpoint | Description | Status |
 |---|---|---|---|
 | `POST` | `/api/patients` | Create a new patient | `201 Created` |
-| `GET` | `/api/patients` | Get all patients | `200 OK` |
-| `GET` | `/api/patients/{id}` | Get patient by ID | `200 OK` |
+| `GET` | `/api/patients` | Retrieve all patients | `200 OK` |
+| `GET` | `/api/patients/{id}` | Retrieve a patient by ID | `200 OK` |
 | `PUT` | `/api/patients/{id}` | Update patient details | `200 OK` |
-| `DELETE` | `/api/patients/{id}` | Delete patient | `204 No Content` |
+| `DELETE` | `/api/patients/{id}` | Delete a patient | `204 No Content` |
 
-### Sample Request — Create Patient
+#### Create Patient
 ```http
 POST /api/patients
 Content-Type: application/json
@@ -127,8 +106,6 @@ Content-Type: application/json
   "bloodGroup": "A_POS"
 }
 ```
-
-### Sample Response
 ```http
 HTTP/1.1 201 Created
 Location: /api/patients/6
@@ -143,7 +120,7 @@ Location: /api/patients/6
 }
 ```
 
-### Validation Error Response
+#### Error Responses
 ```http
 HTTP/1.1 400 Bad Request
 
@@ -157,8 +134,6 @@ HTTP/1.1 400 Bad Request
   }
 }
 ```
-
-### Not Found Response
 ```http
 HTTP/1.1 404 Not Found
 
@@ -170,141 +145,152 @@ HTTP/1.1 404 Not Found
 
 ---
 
-## ✨ Key Features
+## Key Design Decisions
 
-- **Layered Architecture** — Controller → Service → Repository with clean separation of concerns
-- **DTO Pattern** — `PatientRequestDto` and `PatientResponseDto` decouple the API contract from JPA entities
-- **Input Validation** — Jakarta Bean Validation (`@NotBlank`, `@Past`, `@Email`, `@NotNull`) with field-level error messages
-- **Global Exception Handling** — `@RestControllerAdvice` returns structured JSON for 404 and 400 errors
-- **Environment Variable Config** — Database password loaded from `${DB_PASSWORD}`; never hardcoded
-- **Custom Queries** — 8 query types: derived queries, JPQL, native SQL, DTO projections, bulk updates, fetch joins, and pagination
-- **Transaction Management** — `@Transactional(readOnly = true)` on read operations for performance optimization
-- **JPA Relationships** — All 4 relationship types with proper cascade, `orphanRemoval`, and bidirectional consistency
-- **N+1 Prevention** — `LEFT JOIN FETCH` loads patients with appointments in a single query
-- **Enum Storage** — Blood group stored as `EnumType.STRING` for readability and data safety
-- **Audit Fields** — `@CreationTimestamp` with `updatable = false` on `Patient` and `Insurance` for immutable record tracking
-- **Unique Constraints** — Composite unique constraint on `(name, birth_date)` in `Patient`; unique email on `Patient`, `Doctor`, and `Insurance`
+**DTO Pattern** — API inputs and outputs are represented by dedicated request/response DTOs, keeping the persistence layer fully decoupled from the API contract.
+
+**Input Validation** — All incoming data is validated using Jakarta Bean Validation annotations (`@NotBlank`, `@Email`, `@Past`, `@NotNull`). Validation errors return structured field-level messages.
+
+**N+1 Prevention** — Associations that risk N+1 query problems are addressed using `LEFT JOIN FETCH`, loading related entities in a single database round-trip.
+
+**Transaction Management** — Read operations are annotated with `@Transactional(readOnly = true)` to enable Hibernate optimizations and reduce unnecessary flush checks.
+
+**Enum Storage** — Blood group is persisted as `EnumType.STRING` to ensure data remains readable and migration-safe.
+
+**Audit Fields** — `@CreationTimestamp` with `updatable = false` is applied to `Patient` and `Insurance` to create an immutable created-at record.
+
+**Unique Constraints** — A composite constraint on `(name, birth_date)` prevents duplicate patient records. Unique email constraints are enforced on `Patient`, `Doctor`, and `Insurance`.
+
+**Security** — The database password is externalized to the `${DB_PASSWORD}` environment variable and is never hardcoded in configuration files.
 
 ---
 
-## 🗄 Custom Repository Queries
+## Custom Repository Queries
+
+The `PatientRepository` demonstrates eight distinct query patterns supported by Spring Data JPA:
 ```java
-// 1. Derived query — by name
+// 1. Derived method query — by name
 Patient findByName(String name);
 
-// 2. Derived query — by birth date OR email
+// 2. Derived method query — by birth date or email
 List<Patient> findByBirthDateOrEmail(LocalDate birthDate, String email);
 
-// 3. Custom JPQL — filter by blood group
+// 3. JPQL — filter by blood group
 @Query("SELECT p FROM Patient p WHERE p.bloodGroup = ?1")
 List<Patient> findByBloodGroup(BloodGroupType bloodGroup);
 
-// 4. Custom JPQL — born after a given date
+// 4. JPQL — patients born after a given date
 @Query("SELECT p FROM Patient p WHERE p.birthDate > :birthDate")
 List<Patient> findByBornAfterDate(@Param("birthDate") LocalDate birthDate);
 
-// 5. DTO Projection — grouped blood group count
+// 5. DTO Projection — blood group distribution
 @Query("SELECT new com.vyshnavi.dev.hospitalManagement.dto.BloodGroupCountDto(p.bloodGroup, COUNT(p)) " +
        "FROM Patient p GROUP BY p.bloodGroup")
 List<BloodGroupCountDto> countEachBloodGroupType();
 
-// 6. Native SQL with Pagination
+// 6. Native SQL — paginated patient list
 @Query(value = "SELECT * FROM patient", nativeQuery = true)
 Page<Patient> findAllPatients(Pageable pageable);
 
-// 7. Bulk Update
+// 7. Bulk update
 @Transactional
 @Modifying
 @Query("UPDATE Patient p SET p.name = :name WHERE p.id = :id")
 int updateNameById(@Param("name") String name, @Param("id") Long id);
 
-// 8. Fetch Join — solves N+1 problem
+// 8. Fetch join — resolves N+1 for appointments
 @Query("SELECT p FROM Patient p LEFT JOIN FETCH p.appointments")
 List<Patient> findAllPatientsWithAppointments();
 ```
 
 ---
-
-## ⚙️ Setup & Run
+## Getting Started
 
 ### Prerequisites
 
 - Java 21+
 - PostgreSQL
 - Maven
+- IntelliJ IDEA (recommended)
 
-### 1. Clone the Repository
+### 1. Clone the repository
 ```bash
 git clone https://github.com/your-username/hospitalManagement.git
 cd hospitalManagement
 ```
 
-### 2. Create PostgreSQL Database
+### 2. Create the database
 ```sql
 CREATE DATABASE hospitalDB;
 ```
 
-### 3. Set Environment Variable
+### 3. Configure the environment variable
+
+**Option A — IntelliJ IDEA (recommended)**
+
+1. Go to **Run** → **Edit Configurations**
+2. Select your Spring Boot run configuration
+3. Click the browse icon next to **Environment variables**
+4. Click **+** and add:
+   - Name: `DB_PASSWORD`
+   - Value: `your_postgres_password`
+5. Click **OK** → **Apply** → **OK**
+
+**Option B — Terminal**
 ```bash
-# Linux / macOS
+# macOS / Linux
 export DB_PASSWORD=your_postgres_password
 
-# Windows (Command Prompt)
+# Windows
 set DB_PASSWORD=your_postgres_password
 ```
 
-### 4. Run the Application
+### 4. Run the application
 ```bash
 ./mvnw spring-boot:run
 ```
 
-The app starts on `http://localhost:8080`. Sample data is automatically loaded from `data.sql` on startup.
+The server starts at `http://localhost:8080`. Sample data is loaded automatically via `data.sql`.
 
-> ⚠️ `spring.jpa.hibernate.ddl-auto=create` drops and recreates the schema on every startup. Change to `update` or `validate` for staging/production.
+> **Note:** The default `ddl-auto` is set to `create`, which drops and recreates the schema on every startup. Switch to `update` or `validate` before deploying to staging or production.
+---
+
+## Seed Data
+
+On startup, `data.sql` populates the database with:
+
+- 5 patients across various blood groups and demographics
+- 3 doctors across Cardiology, Neurology, and Dermatology
+- 6 appointments linking patients to their respective doctors
 
 ---
 
-## 🌱 Seed Data
+## Testing
 
-`data.sql` pre-loads the database with:
-
-- 5 patients (name, gender, birth date, email, blood group)
-- 3 doctors — Cardiology, Neurology, Dermatology
-- 6 appointments linking patients to doctors
-
----
-
-## 🩸 Blood Group Types
-
-`A_POS` · `A_NEG` · `B_POS` · `B_NEG` · `AB_POS` · `AB_NEG` · `O_POS` · `O_NEG`
-
----
-
-## 🧪 Testing
-
-Integration tests use `@SpringBootTest` to validate service and repository behavior end to end.
+Integration tests are written with `@SpringBootTest` to exercise the full application stack.
 ```bash
 ./mvnw test
 ```
 
-| Test Class | Coverage |
+| Test Class | Scope |
 |---|---|
 | `PatientTests` | Fetch join query, `getPatientById`, paginated native query with sorting |
-| `InsuranceTests` | Assign insurance, remove insurance, create & reassign appointments |
+| `InsuranceTests` | Assign insurance, remove insurance, create and reassign appointments |
 | `HospitalManagementApplicationTests` | Application context loads successfully |
 
 ---
 
-## 🔮 Future Improvements
+## Roadmap
 
-- [ ] Add Spring Security with JWT authentication and role-based access (`ADMIN`, `DOCTOR`, `PATIENT`)
-- [ ] Add REST controllers for Doctor, Appointment, and Department
-- [ ] Replace `ddl-auto=create` with Flyway database migrations
-- [ ] Add unit tests using Mockito for service layer isolation
-- [ ] Add MapStruct for automatic DTO mapping
+- [ ] Spring Security with JWT authentication and role-based access control (`ADMIN`, `DOCTOR`, `PATIENT`)
+- [ ] REST controllers for Doctor, Appointment, and Department resources
+- [ ] Database schema versioning with Flyway
+- [ ] Unit tests for the service layer using Mockito
+- [ ] Automated DTO mapping with MapStruct
 
 ---
 
-## 👩‍💻 Author
+## Author
 
-**Kotha Sree Vyshnavi**
+**Kotha Sree Vyshnavi**  
+[GitHub](https://github.com/your-username) · [LinkedIn](https://linkedin.com/in/your-linkedin)
