@@ -1,6 +1,29 @@
 # 🏥 Hospital Management System
 
-A RESTful backend application built with **Java 21**, **Spring Boot 3**, and **PostgreSQL** that manages core hospital operations — patients, doctors, appointments, departments, and insurance.
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Spring_Boot-3.5.8-6DB33F?style=for-the-badge&logo=springboot&logoColor=white"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Hibernate-59666C?style=for-the-badge&logo=hibernate&logoColor=white"/>
+</p>
+
+A **RESTful backend application** built with Java 21 and Spring Boot 3 that manages core hospital operations — patients, doctors, appointments, departments, and insurance.
+
+---
+
+## 📋 Table of Contents
+
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Entity Relationships](#-entity-relationships)
+- [REST API Endpoints](#-rest-api-endpoints)
+- [Key Features](#-key-features)
+- [Custom Repository Queries](#-custom-repository-queries)
+- [Setup & Run](#-setup--run)
+- [Seed Data](#-seed-data)
+- [Testing](#-testing)
+- [Future Improvements](#-future-improvements)
 
 ---
 
@@ -20,7 +43,6 @@ A RESTful backend application built with **Java 21**, **Spring Boot 3**, and **P
 ---
 
 ## 📁 Project Structure
-
 ```
 src/main/java/com/vyshnavi/dev/hospitalManagement/
 │
@@ -63,11 +85,6 @@ src/main/java/com/vyshnavi/dev/hospitalManagement/
 ---
 
 ## 🔗 Entity Relationships
-
-![ER Diagram](docs/er-diagram.png)
-
-> Entity diagram generated from DBeaver showing all tables and relationships in the `hospitalDB` PostgreSQL database.
-
 ```
 Patient  ──(1:1)──  Insurance
 Patient  ──(1:N)──  Appointment  ──(N:1)──  Doctor
@@ -98,7 +115,6 @@ Department  ──(1:1)──  Doctor              [head doctor]
 | `DELETE` | `/api/patients/{id}` | Delete patient | `204 No Content` |
 
 ### Sample Request — Create Patient
-
 ```http
 POST /api/patients
 Content-Type: application/json
@@ -113,7 +129,6 @@ Content-Type: application/json
 ```
 
 ### Sample Response
-
 ```http
 HTTP/1.1 201 Created
 Location: /api/patients/6
@@ -129,7 +144,6 @@ Location: /api/patients/6
 ```
 
 ### Validation Error Response
-
 ```http
 HTTP/1.1 400 Bad Request
 
@@ -145,7 +159,6 @@ HTTP/1.1 400 Bad Request
 ```
 
 ### Not Found Response
-
 ```http
 HTTP/1.1 404 Not Found
 
@@ -162,20 +175,19 @@ HTTP/1.1 404 Not Found
 - **Layered Architecture** — Controller → Service → Repository with clean separation of concerns
 - **DTO Pattern** — `PatientRequestDto` and `PatientResponseDto` decouple the API contract from JPA entities
 - **Input Validation** — Jakarta Bean Validation (`@NotBlank`, `@Past`, `@Email`, `@NotNull`) with field-level error messages
-- **Global Exception Handling** — `@RestControllerAdvice` returns structured JSON for `404` and `400` errors
-- **Environment Variable Config** — Database password loaded from `${DB_PASSWORD}` env variable; never hardcoded
-- **Custom Queries** — 8 query types including derived queries, JPQL, native SQL, DTO projections, bulk updates, fetch joins, and pagination
+- **Global Exception Handling** — `@RestControllerAdvice` returns structured JSON for 404 and 400 errors
+- **Environment Variable Config** — Database password loaded from `${DB_PASSWORD}`; never hardcoded
+- **Custom Queries** — 8 query types: derived queries, JPQL, native SQL, DTO projections, bulk updates, fetch joins, and pagination
 - **Transaction Management** — `@Transactional(readOnly = true)` on read operations for performance optimization
 - **JPA Relationships** — All 4 relationship types with proper cascade, `orphanRemoval`, and bidirectional consistency
-- **N+1 Prevention** — `LEFT JOIN FETCH` used to load patients with their appointments in a single query
+- **N+1 Prevention** — `LEFT JOIN FETCH` loads patients with appointments in a single query
 - **Enum Storage** — Blood group stored as `EnumType.STRING` for readability and data safety
-- **Audit Fields** — `@CreationTimestamp` with `updatable = false` on both `Patient` and `Insurance` for immutable record tracking
-- **Unique Constraints** — Composite unique constraint on `(name, birth_date)` in `Patient`; unique email enforced on `Patient`, `Doctor`, and `Insurance`
+- **Audit Fields** — `@CreationTimestamp` with `updatable = false` on `Patient` and `Insurance` for immutable record tracking
+- **Unique Constraints** — Composite unique constraint on `(name, birth_date)` in `Patient`; unique email on `Patient`, `Doctor`, and `Insurance`
 
 ---
 
 ## 🗄 Custom Repository Queries
-
 ```java
 // 1. Derived query — by name
 Patient findByName(String name);
@@ -222,22 +234,17 @@ List<Patient> findAllPatientsWithAppointments();
 - Maven
 
 ### 1. Clone the Repository
-
 ```bash
 git clone https://github.com/your-username/hospitalManagement.git
 cd hospitalManagement
 ```
 
 ### 2. Create PostgreSQL Database
-
 ```sql
 CREATE DATABASE hospitalDB;
 ```
 
 ### 3. Set Environment Variable
-
-The database password is read from an environment variable — never hardcoded.
-
 ```bash
 # Linux / macOS
 export DB_PASSWORD=your_postgres_password
@@ -247,7 +254,6 @@ set DB_PASSWORD=your_postgres_password
 ```
 
 ### 4. Run the Application
-
 ```bash
 ./mvnw spring-boot:run
 ```
@@ -277,7 +283,6 @@ The app starts on `http://localhost:8080`. Sample data is automatically loaded f
 ## 🧪 Testing
 
 Integration tests use `@SpringBootTest` to validate service and repository behavior end to end.
-
 ```bash
 ./mvnw test
 ```
@@ -285,14 +290,14 @@ Integration tests use `@SpringBootTest` to validate service and repository behav
 | Test Class | Coverage |
 |---|---|
 | `PatientTests` | Fetch join query, `getPatientById`, paginated native query with sorting |
-| `InsuranceTests` | Assign insurance, remove insurance, create appointment, reassign appointment to another doctor |
+| `InsuranceTests` | Assign insurance, remove insurance, create & reassign appointments |
 | `HospitalManagementApplicationTests` | Application context loads successfully |
 
 ---
 
 ## 🔮 Future Improvements
 
-- [ ] Add Spring Security with JWT authentication and role-based access (ADMIN, DOCTOR, PATIENT)
+- [ ] Add Spring Security with JWT authentication and role-based access (`ADMIN`, `DOCTOR`, `PATIENT`)
 - [ ] Add REST controllers for Doctor, Appointment, and Department
 - [ ] Replace `ddl-auto=create` with Flyway database migrations
 - [ ] Add unit tests using Mockito for service layer isolation
