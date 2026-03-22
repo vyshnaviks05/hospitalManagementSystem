@@ -1,17 +1,18 @@
 # 🏥 Hospital Management System
 
-A RESTful backend application built with **Java 21** and **Spring Boot 3**, designed to manage core hospital operations including patients, doctors, appointments, departments, and insurance.
+A RESTful backend application built with Java 21 and Spring Boot 3, designed to manage core hospital operations including patients, doctors, appointments, departments, and insurance. Secured with JWT-based authentication and role-based access control.
 
 ---
 
 ## 🛠 Tech Stack
 
 | Layer | Technology |
-|---|---|
+|-------|-----------|
 | Language | Java 21 |
 | Framework | Spring Boot 3.5.8 |
 | ORM | Spring Data JPA + Hibernate |
 | Database | PostgreSQL |
+| Security | Spring Security + JWT (jjwt 0.11.5) |
 | Validation | Jakarta Bean Validation |
 | Boilerplate | Lombok |
 | Build Tool | Maven |
@@ -21,17 +22,24 @@ A RESTful backend application built with **Java 21** and **Spring Boot 3**, desi
 
 ## 🏗 Architecture Overview
 
-The application follows a standard layered architecture with a clean separation of concerns across the **Controller**, **Service**, and **Repository** layers. Input and output are decoupled from JPA entities using dedicated DTOs with manual mapper classes, and all exceptions are handled centrally via `@RestControllerAdvice`.
+The application follows a standard layered architecture with a clean separation of concerns across the Controller, Service, and Repository layers. Input and output are decoupled from JPA entities using dedicated DTOs with manual mapper classes, and all exceptions are handled centrally via `@RestControllerAdvice`.
 
 ```
 src/main/java/com/vyshnavi/dev/hospitalManagement/
 │
 ├── controller/
+│   ├── AuthController.java                 # Register and login endpoints
 │   ├── PatientController.java              # REST endpoints for patient CRUD
 │   ├── DoctorController.java               # REST endpoints for doctor CRUD
 │   ├── AppointmentController.java          # Create appointment and reassign to another doctor
 │   ├── InsuranceController.java            # Assign and remove patient insurance
 │   └── GlobalExceptionHandler.java         # Centralized exception handling (@RestControllerAdvice)
+│
+├── security/
+│   ├── SecurityConfig.java                 # Security filter chain and role-based access rules
+│   ├── JwtUtil.java                        # JWT token generation and validation
+│   ├── JwtFilter.java                      # Intercepts every request and validates JWT token
+│   └── UserDetailsServiceImpl.java         # Loads user from DB for Spring Security
 │
 ├── service/
 │   ├── PatientService.java                 # Patient CRUD business logic
@@ -44,9 +52,11 @@ src/main/java/com/vyshnavi/dev/hospitalManagement/
 │   ├── DoctorRepository.java
 │   ├── AppointmentRepository.java
 │   ├── DepartmentRepository.java
-│   └── InsuranceRepository.java
+│   ├── InsuranceRepository.java
+│   └── UserRepository.java                 # Finds user by username for authentication
 │
 ├── entity/
+│   ├── User.java                           # Auth user with role (ADMIN, DOCTOR, PATIENT)
 │   ├── Patient.java                        # Core entity with constraints and JPA relationships
 │   ├── Doctor.java                         # Specialization, departments, appointments
 │   ├── Appointment.java                    # Links Patient ↔ Doctor with time and reason
@@ -55,6 +65,8 @@ src/main/java/com/vyshnavi/dev/hospitalManagement/
 │   └── type/BloodGroupType.java            # Enum: A_POS, A_NEG, B_POS, B_NEG, AB_POS, AB_NEG, O_POS, O_NEG
 │
 ├── dto/
+│   ├── AuthRequest.java                    # Login/register input DTO (username, password, role)
+│   ├── AuthResponse.java                   # Login response DTO (token, role)
 │   ├── PatientRequestDto.java              # Input DTO with Bean Validation annotations
 │   ├── PatientResponseDto.java             # Output DTO for patient responses
 │   ├── DoctorRequestDto.java               # Input DTO for doctor creation and update
@@ -77,6 +89,72 @@ src/main/java/com/vyshnavi/dev/hospitalManagement/
 
 ---
 
+## 🔐 Security — JWT Authentication & Role-Based Access
+
+The application uses **stateless JWT authentication**. Users register and log in via `/api/auth`. On successful login, a signed JWT token is returned and must be included in all subsequent requests via the `Authorization` header.
+
+### Roles & Access Control
+
+| Role | Access |
+|------|--------|
+| `ADMIN` | All endpoints |
+| `DOCTOR` | Patients, Doctors, Appointments |
+| `PATIENT` | Patients, Appointments |
+
+### Authentication Flow
+
+```
+POST /api/auth/register  →  Save user with BCrypt encoded password
+POST /api/auth/login     →  Verify credentials → Return JWT token
+
+Every protected request:
+  Authorization: Bearer <token>
+        ↓
+  JwtFilter validates token
+        ↓
+  SecurityConfig checks role
+        ↓
+  Controller handles request
+```
+
+### Auth Endpoints
+
+**Register**
+```
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "username": "doctor1",
+  "password": "1234",
+  "role": "DOCTOR"
+}
+```
+
+**Login**
+```
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "doctor1",
+  "password": "1234"
+}
+
+Response:
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9......",
+  "role": "DOCTOR"
+}
+```
+
+**Using the token:**
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9......
+```
+
+---
+
 ## 🔗 Entity Relationships
 
 ```
@@ -87,50 +165,52 @@ Department    ──(1:1)──  Doctor                  [head doctor]
 ```
 
 | Relationship | Entities | Owning Side |
-|---|---|---|
-| @OneToOne | Patient ↔ Insurance | Patient (`patient_insurance_id`) |
-| @OneToMany / @ManyToOne | Patient ↔ Appointment | Appointment (`patient_id`) |
-| @OneToMany / @ManyToOne | Doctor ↔ Appointment | Appointment (`doctor_id`) |
-| @ManyToMany | Department ↔ Doctor | Department (`department_doctors`) |
-| @OneToOne | Department → Doctor (head) | Department |
+|-------------|----------|-------------|
+| `@OneToOne` | Patient ↔ Insurance | Patient (patient_insurance_id) |
+| `@OneToMany / @ManyToOne` | Patient ↔ Appointment | Appointment (patient_id) |
+| `@OneToMany / @ManyToOne` | Doctor ↔ Appointment | Appointment (doctor_id) |
+| `@ManyToMany` | Department ↔ Doctor | Department (department_doctors) |
+| `@OneToOne` | Department → Doctor (head) | Department |
 
 ---
 
 ## 🚀 REST API Endpoints
 
-### Patient — `/api/patients`
+### Auth — /api/auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /api/auth/register | Register a new user |
+| POST | /api/auth/login | Login and receive JWT token |
 
+### Patient — /api/patients
 | Method | Endpoint | Description | Response |
-|---|---|---|---|
-| POST | `/api/patients` | Create a new patient | 201 Created |
-| GET | `/api/patients` | Retrieve all patients | 200 OK |
-| GET | `/api/patients/{id}` | Retrieve a patient by ID | 200 OK |
-| PUT | `/api/patients/{id}` | Update patient details | 200 OK |
-| DELETE | `/api/patients/{id}` | Delete a patient | 204 No Content |
+|--------|----------|-------------|----------|
+| POST | /api/patients | Create a new patient | 201 Created |
+| GET | /api/patients | Retrieve all patients | 200 OK |
+| GET | /api/patients/{id} | Retrieve a patient by ID | 200 OK |
+| PUT | /api/patients/{id} | Update patient details | 200 OK |
+| DELETE | /api/patients/{id} | Delete a patient | 204 No Content |
 
-### Doctor — `/api/doctors`
-
+### Doctor — /api/doctors
 | Method | Endpoint | Description | Response |
-|---|---|---|---|
-| POST | `/api/doctors` | Create a new doctor | 201 Created |
-| GET | `/api/doctors` | Retrieve all doctors | 200 OK |
-| GET | `/api/doctors/{id}` | Retrieve a doctor by ID | 200 OK |
-| PUT | `/api/doctors/{id}` | Update doctor details | 200 OK |
-| DELETE | `/api/doctors/{id}` | Delete a doctor | 204 No Content |
+|--------|----------|-------------|----------|
+| POST | /api/doctors | Create a new doctor | 201 Created |
+| GET | /api/doctors | Retrieve all doctors | 200 OK |
+| GET | /api/doctors/{id} | Retrieve a doctor by ID | 200 OK |
+| PUT | /api/doctors/{id} | Update doctor details | 200 OK |
+| DELETE | /api/doctors/{id} | Delete a doctor | 204 No Content |
 
-### Appointment — `/api/appointments`
-
+### Appointment — /api/appointments
 | Method | Endpoint | Description | Response |
-|---|---|---|---|
-| POST | `/api/appointments` | Create a new appointment | 201 Created |
-| PATCH | `/api/appointments/{id}/reassign?doctorId={id}` | Reassign appointment to another doctor | 200 OK |
+|--------|----------|-------------|----------|
+| POST | /api/appointments | Create a new appointment | 201 Created |
+| PATCH | /api/appointments/{id}/reassign?doctorId={id} | Reassign appointment to another doctor | 200 OK |
 
-### Insurance — `/api/patients/{patientId}/insurance`
-
+### Insurance — /api/patients/{patientId}/insurance
 | Method | Endpoint | Description | Response |
-|---|---|---|---|
-| POST | `/api/patients/{patientId}/insurance` | Assign insurance to a patient | 200 OK |
-| DELETE | `/api/patients/{patientId}/insurance` | Remove insurance from a patient | 204 No Content |
+|--------|----------|-------------|----------|
+| POST | /api/patients/{patientId}/insurance | Assign insurance to a patient | 200 OK |
+| DELETE | /api/patients/{patientId}/insurance | Remove insurance from a patient | 204 No Content |
 
 ---
 
@@ -140,6 +220,7 @@ Department    ──(1:1)──  Doctor                  [head doctor]
 ```
 POST /api/patients
 Content-Type: application/json
+Authorization: Bearer <token>
 
 {
   "name": "John Doe",
@@ -148,8 +229,7 @@ Content-Type: application/json
   "gender": "MALE",
   "bloodGroup": "A_POS"
 }
-```
-```
+
 HTTP/1.1 201 Created
 Location: /api/patients/6
 
@@ -167,14 +247,14 @@ Location: /api/patients/6
 ```
 POST /api/doctors
 Content-Type: application/json
+Authorization: Bearer <token>
 
 {
   "name": "Dr. Priya Sharma",
   "specialization": "Cardiology",
   "email": "priya.sharma@hospital.com"
 }
-```
-```
+
 HTTP/1.1 201 Created
 Location: /api/doctors/4
 
@@ -190,6 +270,7 @@ Location: /api/doctors/4
 ```
 POST /api/appointments
 Content-Type: application/json
+Authorization: Bearer <token>
 
 {
   "appointmentTime": "2026-06-15T10:30:00",
@@ -197,10 +278,8 @@ Content-Type: application/json
   "doctorId": 2,
   "patientId": 1
 }
-```
-```
+
 HTTP/1.1 201 Created
-Location: /api/appointments/7
 
 {
   "id": 7,
@@ -216,8 +295,8 @@ Location: /api/appointments/7
 ### Reassign Appointment
 ```
 PATCH /api/appointments/7/reassign?doctorId=3
-```
-```
+Authorization: Bearer <token>
+
 HTTP/1.1 200 OK
 
 {
@@ -235,14 +314,14 @@ HTTP/1.1 200 OK
 ```
 POST /api/patients/1/insurance
 Content-Type: application/json
+Authorization: Bearer <token>
 
 {
   "policyNumber": "HDFC1234",
   "provider": "HDFC Ergo",
   "validUntil": "2028-09-01"
 }
-```
-```
+
 HTTP/1.1 200 OK
 
 {
@@ -271,6 +350,22 @@ HTTP/1.1 200 OK
 }
 ```
 
+**401 Unauthorized — Missing or invalid token**
+```json
+{
+  "error": "Unauthorized",
+  "message": "Full authentication is required to access this resource"
+}
+```
+
+**403 Forbidden — Insufficient role**
+```json
+{
+  "error": "Forbidden",
+  "message": "Access Denied"
+}
+```
+
 **404 Not Found**
 ```json
 {
@@ -285,6 +380,12 @@ HTTP/1.1 200 OK
 
 **Layered Architecture** — Controller handles HTTP, Service handles business logic and transactions, Repository handles data access. Each layer has exactly one responsibility.
 
+**JWT Stateless Authentication** — No server-side sessions. Each request carries a self-contained signed JWT token with a 24-hour expiry. The `JwtFilter` intercepts every request, validates the token, and sets the authentication context.
+
+**Role-Based Authorization** — Three roles (ADMIN, DOCTOR, PATIENT) with different endpoint access levels enforced via Spring Security's `SecurityFilterChain`.
+
+**BCrypt Password Encoding** — All passwords are hashed using BCrypt before storage. Plain-text passwords are never stored in the database.
+
 **DTO Pattern** — Dedicated request and response DTOs for every entity decouple the API contract from JPA entities. Manual mapper classes handle conversion following the Single Responsibility Principle.
 
 **Input Validation** — Jakarta Bean Validation annotations (`@NotBlank`, `@Email`, `@Past`, `@Future`, `@NotNull`) on all request DTOs. Validation failures return structured field-level error messages via `GlobalExceptionHandler`.
@@ -293,17 +394,13 @@ HTTP/1.1 200 OK
 
 **N+1 Prevention** — `LEFT JOIN FETCH` used in `findAllPatientsWithAppointments()` to load patients and their appointments in a single SQL query instead of one query per patient.
 
-**Transaction Management** — `@Transactional(readOnly = true)` on all read operations disables Hibernate dirty checking for performance optimization. Write operations use `@Transactional` for automatic rollback on failure.
+**Transaction Management** — `@Transactional(readOnly = true)` on all read operations disables Hibernate dirty checking for performance. Write operations use `@Transactional` for automatic rollback on failure.
 
-**Nested Resource URL for Insurance** — Insurance endpoints use `/api/patients/{patientId}/insurance` because insurance only exists in the context of a patient — expressing resource ownership clearly in the URL.
+**Nested Resource URL for Insurance** — Insurance endpoints use `/api/patients/{patientId}/insurance` because insurance only exists in the context of a patient.
 
-**PATCH for Partial Update** — Appointment reassignment uses `PATCH /api/appointments/{id}/reassign?doctorId=` instead of PUT, since only one field (the assigned doctor) is being changed.
+**PATCH for Partial Update** — Appointment reassignment uses `PATCH /api/appointments/{id}/reassign?doctorId=` instead of PUT, since only the assigned doctor is being changed.
 
-**Enum Storage** — Blood group stored as `EnumType.STRING` for readability and migration safety.
-
-**Audit Fields** — `@CreationTimestamp` with `updatable = false` on both Patient and Insurance creates an immutable created-at timestamp.
-
-**Security** — Database password is externalized to the `${DB_PASSWORD}` environment variable and never hardcoded in configuration files.
+**Externalized Secrets** — Database password is read from the `${DB_PASSWORD}` environment variable and never hardcoded in configuration files.
 
 ---
 
@@ -372,11 +469,11 @@ CREATE DATABASE hospitalDB;
 The database password is read from an environment variable — never hardcoded.
 
 **Option A — IntelliJ IDEA (recommended)**
-1. Go to **Run → Edit Configurations**
+1. Go to Run → Edit Configurations
 2. Select your Spring Boot run configuration
-3. Click the browse icon next to **Environment variables**
-4. Click **+** and add: `DB_PASSWORD = your_postgres_password`
-5. Click **OK → Apply → OK**
+3. Click the browse icon next to Environment variables
+4. Click + and add: `DB_PASSWORD = your_postgres_password`
+5. Click OK → Apply → OK
 
 **Option B — Terminal**
 ```bash
@@ -422,24 +519,27 @@ Integration tests use `@SpringBootTest` to exercise the full application stack a
 ```
 
 | Test Class | Coverage |
-|---|---|
-| `PatientTests` | Fetch join query, getPatientById, paginated native query with sorting, ResourceNotFoundException for missing patient |
-| `InsuranceTests` | Assign insurance, remove insurance, create appointment, reassign appointment to another doctor |
-| `HospitalManagementApplicationTests` | Application context loads successfully |
+|-----------|---------|
+| PatientTests | Fetch join query, getPatientById, paginated native query with sorting, ResourceNotFoundException for missing patient |
+| InsuranceTests | Assign insurance, remove insurance, create appointment, reassign appointment to another doctor |
+| HospitalManagementApplicationTests | Application context loads successfully |
 
 ---
 
 ## 🔮 Roadmap
 
-- [ ] Spring Security with JWT authentication and role-based access control (ADMIN, DOCTOR, PATIENT)
+- [x] Spring Security with JWT authentication and role-based access control (ADMIN, DOCTOR, PATIENT)
 - [ ] Unit tests for the service layer using Mockito
 - [ ] Automated DTO mapping with MapStruct
+- [ ] Redis caching for frequently accessed data
+- [ ] Swagger / OpenAPI documentation
 
 ---
 
 ## 👩‍💻 Author
 
 **Kotha Sree Vyshnavi**
-- 💼 [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
-- 🐙 [GitHub](https://github.com/vyshnaviks05)
-- 📧 vyshukotha05@gmail.com
+
+💼 [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
+🐙 [GitHub](https://github.com/vyshnaviks05)
+📧 vyshukotha05@gmail.com
