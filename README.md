@@ -1,99 +1,154 @@
+<div align="center">
+
 # 🏥 Hospital Management System
 
-A RESTful backend application built with Java 21 and Spring Boot 3, designed to manage core hospital operations including patients, doctors, appointments, departments, and insurance. Secured with JWT-based authentication and role-based access control.
+A RESTful backend for managing hospital operations — patients, doctors, appointments, departments, and insurance — built with Java 21 and Spring Boot 3. Secured with JWT-based authentication and role-based access control.
+
+![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?style=flat-square&logo=springboot)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-blue?style=flat-square&logo=postgresql)
+![JWT](https://img.shields.io/badge/Auth-JWT-black?style=flat-square&logo=jsonwebtokens)
+![Maven](https://img.shields.io/badge/Build-Maven-red?style=flat-square&logo=apachemaven)
+
+</div>
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|---|---|
 | Language | Java 21 |
-| Framework | Spring Boot 3.5.8 |
+| Framework | Spring Boot 3, Spring MVC, Spring Security |
 | ORM | Spring Data JPA + Hibernate |
 | Database | PostgreSQL |
 | Security | Spring Security + JWT (jjwt 0.11.5) |
 | Validation | Jakarta Bean Validation |
 | Boilerplate | Lombok |
-| Build Tool | Maven |
+| Build | Maven |
 | Testing | Spring Boot Test (JUnit 5) |
 
 ---
 
-## 🏗 Architecture Overview
+## Features
 
-The application follows a standard layered architecture with a clean separation of concerns across the Controller, Service, and Repository layers. Input and output are decoupled from JPA entities using dedicated DTOs with manual mapper classes, and all exceptions are handled centrally via `@RestControllerAdvice`.
+- JWT stateless authentication with role-based access control (`ADMIN`, `DOCTOR`, `PATIENT`)
+- Full CRUD for patients and doctors
+- Appointment scheduling and doctor reassignment
+- Patient insurance assignment and removal
+- Centralized exception handling with structured field-level error responses
+- BCrypt password encoding — plain-text passwords are never stored
+
+---
+
+## Architecture
+
+Standard layered architecture — Controller → Service → Repository. Input and output are decoupled from JPA entities using dedicated DTOs with manual mapper classes. All exceptions are handled centrally via `@RestControllerAdvice`.
 
 ```
 src/main/java/com/vyshnavi/dev/hospitalManagement/
-│
-├── controller/
-│   ├── AuthController.java                 # Register and login endpoints
-│   ├── PatientController.java              # REST endpoints for patient CRUD
-│   ├── DoctorController.java               # REST endpoints for doctor CRUD
-│   ├── AppointmentController.java          # Create appointment and reassign to another doctor
-│   ├── InsuranceController.java            # Assign and remove patient insurance
-│   └── GlobalExceptionHandler.java         # Centralized exception handling (@RestControllerAdvice)
-│
-├── security/
-│   ├── SecurityConfig.java                 # Security filter chain and role-based access rules
-│   ├── JwtUtil.java                        # JWT token generation and validation
-│   ├── JwtFilter.java                      # Intercepts every request and validates JWT token
-│   └── UserDetailsServiceImpl.java         # Loads user from DB for Spring Security
-│
-├── service/
-│   ├── PatientService.java                 # Patient CRUD business logic
-│   ├── DoctorService.java                  # Doctor CRUD business logic
-│   ├── InsuranceService.java               # Assign and remove patient insurance
-│   └── AppointmentService.java             # Create appointments and reassign to another doctor
-│
-├── repository/
-│   ├── PatientRepository.java              # JPQL, native SQL, pagination, bulk update, fetch join queries
-│   ├── DoctorRepository.java
-│   ├── AppointmentRepository.java
-│   ├── DepartmentRepository.java
-│   ├── InsuranceRepository.java
-│   └── UserRepository.java                 # Finds user by username for authentication
-│
-├── entity/
-│   ├── User.java                           # Auth user with role (ADMIN, DOCTOR, PATIENT)
-│   ├── Patient.java                        # Core entity with constraints and JPA relationships
-│   ├── Doctor.java                         # Specialization, departments, appointments
-│   ├── Appointment.java                    # Links Patient ↔ Doctor with time and reason
-│   ├── Department.java                     # Has a head doctor and many doctors (ManyToMany)
-│   ├── Insurance.java                      # OneToOne with Patient (policy, provider, validity)
-│   └── type/BloodGroupType.java            # Enum: A_POS, A_NEG, B_POS, B_NEG, AB_POS, AB_NEG, O_POS, O_NEG
-│
-├── dto/
-│   ├── AuthRequest.java                    # Login/register input DTO (username, password, role)
-│   ├── AuthResponse.java                   # Login response DTO (token, role)
-│   ├── PatientRequestDto.java              # Input DTO with Bean Validation annotations
-│   ├── PatientResponseDto.java             # Output DTO for patient responses
-│   ├── DoctorRequestDto.java               # Input DTO for doctor creation and update
-│   ├── DoctorResponseDto.java              # Output DTO for doctor responses
-│   ├── AppointmentRequestDto.java          # Input DTO with doctorId, patientId, time, reason
-│   ├── AppointmentResponseDto.java         # Output DTO with patient and doctor details
-│   ├── InsuranceRequestDto.java            # Input DTO for insurance assignment
-│   ├── InsuranceResponseDto.java           # Output DTO with insurance and patient details
-│   └── BloodGroupCountDto.java             # Projection DTO for blood group aggregation query
-│
-├── mapper/
-│   ├── PatientMapper.java                  # Manual DTO ↔ Entity conversion for Patient
-│   ├── DoctorMapper.java                   # Manual DTO ↔ Entity conversion for Doctor
-│   ├── AppointmentMapper.java              # Entity → ResponseDto conversion for Appointment
-│   └── InsuranceMapper.java                # Manual DTO ↔ Entity conversion for Insurance
-│
-└── exception/
-    └── ResourceNotFoundException.java      # Custom 404 runtime exception
+├── controller/       # REST endpoints, GlobalExceptionHandler
+├── security/         # JwtFilter, SecurityConfig, UserDetailsServiceImpl
+├── service/          # Business logic
+├── repository/       # JPQL, native SQL, pagination, bulk updates, fetch joins
+├── entity/           # JPA entities
+├── dto/              # Request / response DTOs
+├── mapper/           # DTO ↔ Entity conversion
+└── exception/        # ResourceNotFoundException
 ```
 
 ---
 
-## 🔐 Security — JWT Authentication & Role-Based Access
+## Entity Relationships
 
-The application uses **stateless JWT authentication**. Users register and log in via `/api/auth`. On successful login, a signed JWT token is returned and must be included in all subsequent requests via the `Authorization` header.
+```
+Patient     ──(1:1)──  Insurance
+Patient     ──(1:N)──  Appointment  ──(N:1)──  Doctor
+Department  ──(M:N)──  Doctor
+Department  ──(1:1)──  Doctor  (head)
+```
 
-### Roles & Access Control
+---
+
+## API Reference
+
+<details>
+<summary><strong>Auth</strong> — <code>/api/auth</code></summary>
+<br>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/register` | Register a new user |
+| `POST` | `/login` | Login and receive JWT token |
+
+</details>
+
+<details>
+<summary><strong>Patients</strong> — <code>/api/patients</code></summary>
+<br>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create a new patient |
+| `GET` | `/` | Retrieve all patients |
+| `GET` | `/{id}` | Retrieve a patient by ID |
+| `PUT` | `/{id}` | Update patient details |
+| `DELETE` | `/{id}` | Delete a patient |
+
+</details>
+
+<details>
+<summary><strong>Doctors</strong> — <code>/api/doctors</code></summary>
+<br>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create a new doctor |
+| `GET` | `/` | Retrieve all doctors |
+| `GET` | `/{id}` | Retrieve a doctor by ID |
+| `PUT` | `/{id}` | Update doctor details |
+| `DELETE` | `/{id}` | Delete a doctor |
+
+</details>
+
+<details>
+<summary><strong>Appointments</strong> — <code>/api/appointments</code></summary>
+<br>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create a new appointment |
+| `PATCH` | `/{id}/reassign?doctorId={id}` | Reassign appointment to another doctor |
+
+</details>
+
+<details>
+<summary><strong>Insurance</strong> — <code>/api/patients/{patientId}/insurance</code></summary>
+<br>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Assign insurance to a patient |
+| `DELETE` | `/` | Remove insurance from a patient |
+
+</details>
+
+---
+
+## Authentication
+
+```bash
+# Register
+POST /api/auth/register
+{ "username": "doctor1", "password": "1234", "role": "DOCTOR" }
+
+# Login — returns a signed JWT token
+POST /api/auth/login
+{ "username": "doctor1", "password": "1234" }
+
+# Use token in all subsequent requests
+Authorization: Bearer <token>
+```
 
 | Role | Access |
 |------|--------|
@@ -101,381 +156,34 @@ The application uses **stateless JWT authentication**. Users register and log in
 | `DOCTOR` | Patients, Doctors, Appointments |
 | `PATIENT` | Patients, Appointments |
 
-### Authentication Flow
+---
 
-```
-POST /api/auth/register  →  Save user with BCrypt encoded password
-POST /api/auth/login     →  Verify credentials → Return JWT token
+## Technical Highlights
 
-Every protected request:
-  Authorization: Bearer <token>
-        ↓
-  JwtFilter validates token
-        ↓
-  SecurityConfig checks role
-        ↓
-  Controller handles request
-```
-
-### Auth Endpoints
-
-**Register**
-```
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "username": "doctor1",
-  "password": "1234",
-  "role": "DOCTOR"
-}
-```
-
-**Login**
-```
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "username": "doctor1",
-  "password": "1234"
-}
-
-Response:
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9......",
-  "role": "DOCTOR"
-}
-```
-
-**Using the token:**
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9......
-```
+- **N+1 prevention** — `LEFT JOIN FETCH` in `findAllPatientsWithAppointments()` loads patients and appointments in a single SQL query instead of one query per patient
+- **Transaction management** — `@Transactional(readOnly = true)` on all read operations disables Hibernate dirty checking; write operations use `@Transactional` for automatic rollback on failure
+- **8 query patterns** in `PatientRepository` — derived methods, JPQL, DTO projections, native SQL with pagination, bulk updates, and fetch joins
+- **Input validation** — Jakarta Bean Validation annotations (`@NotBlank`, `@Email`, `@Past`, `@Future`, `@NotNull`) on all request DTOs with structured field-level error responses
+- **Externalized secrets** — database password is read from `${DB_PASSWORD}` environment variable; never hardcoded
 
 ---
 
-## 🔗 Entity Relationships
+## Getting Started
 
-```
-Patient       ──(1:1)──  Insurance
-Patient       ──(1:N)──  Appointment  ──(N:1)──  Doctor
-Department    ──(M:N)──  Doctor                  [join table: department_doctors]
-Department    ──(1:1)──  Doctor                  [head doctor]
-```
+**Prerequisites:** Java 21+, PostgreSQL, Maven
 
-| Relationship | Entities | Owning Side |
-|-------------|----------|-------------|
-| `@OneToOne` | Patient ↔ Insurance | Patient (patient_insurance_id) |
-| `@OneToMany / @ManyToOne` | Patient ↔ Appointment | Appointment (patient_id) |
-| `@OneToMany / @ManyToOne` | Doctor ↔ Appointment | Appointment (doctor_id) |
-| `@ManyToMany` | Department ↔ Doctor | Department (department_doctors) |
-| `@OneToOne` | Department → Doctor (head) | Department |
-
----
-
-## 🚀 REST API Endpoints
-
-### Auth — /api/auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/register | Register a new user |
-| POST | /api/auth/login | Login and receive JWT token |
-
-### Patient — /api/patients
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| POST | /api/patients | Create a new patient | 201 Created |
-| GET | /api/patients | Retrieve all patients | 200 OK |
-| GET | /api/patients/{id} | Retrieve a patient by ID | 200 OK |
-| PUT | /api/patients/{id} | Update patient details | 200 OK |
-| DELETE | /api/patients/{id} | Delete a patient | 204 No Content |
-
-### Doctor — /api/doctors
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| POST | /api/doctors | Create a new doctor | 201 Created |
-| GET | /api/doctors | Retrieve all doctors | 200 OK |
-| GET | /api/doctors/{id} | Retrieve a doctor by ID | 200 OK |
-| PUT | /api/doctors/{id} | Update doctor details | 200 OK |
-| DELETE | /api/doctors/{id} | Delete a doctor | 204 No Content |
-
-### Appointment — /api/appointments
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| POST | /api/appointments | Create a new appointment | 201 Created |
-| PATCH | /api/appointments/{id}/reassign?doctorId={id} | Reassign appointment to another doctor | 200 OK |
-
-### Insurance — /api/patients/{patientId}/insurance
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| POST | /api/patients/{patientId}/insurance | Assign insurance to a patient | 200 OK |
-| DELETE | /api/patients/{patientId}/insurance | Remove insurance from a patient | 204 No Content |
-
----
-
-## 📋 Sample Requests and Responses
-
-### Create Patient
-```
-POST /api/patients
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "name": "John Doe",
-  "birthDate": "1995-06-15",
-  "email": "johndoe@example.com",
-  "gender": "MALE",
-  "bloodGroup": "A_POS"
-}
-
-HTTP/1.1 201 Created
-Location: /api/patients/6
-
-{
-  "id": 6,
-  "name": "John Doe",
-  "birthDate": "1995-06-15",
-  "email": "johndoe@example.com",
-  "gender": "MALE",
-  "bloodGroup": "A_POS"
-}
-```
-
-### Create Doctor
-```
-POST /api/doctors
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "name": "Dr. Priya Sharma",
-  "specialization": "Cardiology",
-  "email": "priya.sharma@hospital.com"
-}
-
-HTTP/1.1 201 Created
-Location: /api/doctors/4
-
-{
-  "id": 4,
-  "name": "Dr. Priya Sharma",
-  "specialization": "Cardiology",
-  "email": "priya.sharma@hospital.com"
-}
-```
-
-### Create Appointment
-```
-POST /api/appointments
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "appointmentTime": "2026-06-15T10:30:00",
-  "reason": "Routine Checkup",
-  "doctorId": 2,
-  "patientId": 1
-}
-
-HTTP/1.1 201 Created
-
-{
-  "id": 7,
-  "appointmentTime": "2026-06-15T10:30:00",
-  "reason": "Routine Checkup",
-  "patientId": 1,
-  "patientName": "Ram",
-  "doctorId": 2,
-  "doctorName": "Dr. Anil Kumar"
-}
-```
-
-### Reassign Appointment
-```
-PATCH /api/appointments/7/reassign?doctorId=3
-Authorization: Bearer <token>
-
-HTTP/1.1 200 OK
-
-{
-  "id": 7,
-  "appointmentTime": "2026-06-15T10:30:00",
-  "reason": "Routine Checkup",
-  "patientId": 1,
-  "patientName": "Ram",
-  "doctorId": 3,
-  "doctorName": "Dr. Meena Rao"
-}
-```
-
-### Assign Insurance
-```
-POST /api/patients/1/insurance
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "policyNumber": "HDFC1234",
-  "provider": "HDFC Ergo",
-  "validUntil": "2028-09-01"
-}
-
-HTTP/1.1 200 OK
-
-{
-  "id": 1,
-  "policyNumber": "HDFC1234",
-  "provider": "HDFC Ergo",
-  "validUntil": "2028-09-01",
-  "createdAt": "2026-03-21T10:00:00",
-  "patientId": 1,
-  "patientName": "Ram"
-}
-```
-
-### Error Responses
-
-**400 Bad Request — Validation failure**
-```json
-{
-  "error": "Validation Failed",
-  "fieldErrors": {
-    "name": "name must not be blank",
-    "email": "must be a well-formed email address",
-    "birthDate": "birthDate must be in the past",
-    "bloodGroup": "bloodGroup is required"
-  }
-}
-```
-
-**401 Unauthorized — Missing or invalid token**
-```json
-{
-  "error": "Unauthorized",
-  "message": "Full authentication is required to access this resource"
-}
-```
-
-**403 Forbidden — Insufficient role**
-```json
-{
-  "error": "Forbidden",
-  "message": "Access Denied"
-}
-```
-
-**404 Not Found**
-```json
-{
-  "error": "Not Found",
-  "message": "Patient not found with id: 99"
-}
-```
-
----
-
-## ✨ Key Design Decisions
-
-**Layered Architecture** — Controller handles HTTP, Service handles business logic and transactions, Repository handles data access. Each layer has exactly one responsibility.
-
-**JWT Stateless Authentication** — No server-side sessions. Each request carries a self-contained signed JWT token with a 24-hour expiry. The `JwtFilter` intercepts every request, validates the token, and sets the authentication context.
-
-**Role-Based Authorization** — Three roles (ADMIN, DOCTOR, PATIENT) with different endpoint access levels enforced via Spring Security's `SecurityFilterChain`.
-
-**BCrypt Password Encoding** — All passwords are hashed using BCrypt before storage. Plain-text passwords are never stored in the database.
-
-**DTO Pattern** — Dedicated request and response DTOs for every entity decouple the API contract from JPA entities. Manual mapper classes handle conversion following the Single Responsibility Principle.
-
-**Input Validation** — Jakarta Bean Validation annotations (`@NotBlank`, `@Email`, `@Past`, `@Future`, `@NotNull`) on all request DTOs. Validation failures return structured field-level error messages via `GlobalExceptionHandler`.
-
-**Centralized Exception Handling** — `@RestControllerAdvice` handles `ResourceNotFoundException` (404) and `MethodArgumentNotValidException` (400) globally, returning consistent JSON error responses across all endpoints.
-
-**N+1 Prevention** — `LEFT JOIN FETCH` used in `findAllPatientsWithAppointments()` to load patients and their appointments in a single SQL query instead of one query per patient.
-
-**Transaction Management** — `@Transactional(readOnly = true)` on all read operations disables Hibernate dirty checking for performance. Write operations use `@Transactional` for automatic rollback on failure.
-
-**Nested Resource URL for Insurance** — Insurance endpoints use `/api/patients/{patientId}/insurance` because insurance only exists in the context of a patient.
-
-**PATCH for Partial Update** — Appointment reassignment uses `PATCH /api/appointments/{id}/reassign?doctorId=` instead of PUT, since only the assigned doctor is being changed.
-
-**Externalized Secrets** — Database password is read from the `${DB_PASSWORD}` environment variable and never hardcoded in configuration files.
-
----
-
-## 🗄 Custom Repository Queries
-
-The `PatientRepository` demonstrates 8 distinct query patterns supported by Spring Data JPA:
-
-```java
-// 1. Derived method — by name
-Patient findByName(String name);
-
-// 2. Derived method — by birth date OR email
-List<Patient> findByBirthDateOrEmail(LocalDate birthDate, String email);
-
-// 3. JPQL — filter by blood group
-@Query("SELECT p FROM Patient p WHERE p.bloodGroup = ?1")
-List<Patient> findByBloodGroup(BloodGroupType bloodGroup);
-
-// 4. JPQL — patients born after a given date
-@Query("SELECT p FROM Patient p WHERE p.birthDate > :birthDate")
-List<Patient> findByBornAfterDate(@Param("birthDate") LocalDate birthDate);
-
-// 5. DTO Projection — blood group distribution
-@Query("SELECT new com.vyshnavi.dev.hospitalManagement.dto.BloodGroupCountDto(p.bloodGroup, COUNT(p)) " +
-       "FROM Patient p GROUP BY p.bloodGroup")
-List<BloodGroupCountDto> countEachBloodGroupType();
-
-// 6. Native SQL with pagination
-@Query(value = "SELECT * FROM patient", nativeQuery = true)
-Page<Patient> findAllPatients(Pageable pageable);
-
-// 7. Bulk update
-@Transactional
-@Modifying
-@Query("UPDATE Patient p SET p.name = :name WHERE p.id = :id")
-int updateNameById(@Param("name") String name, @Param("id") Long id);
-
-// 8. Fetch join — resolves N+1 for appointments
-@Query("SELECT p FROM Patient p LEFT JOIN FETCH p.appointments")
-List<Patient> findAllPatientsWithAppointments();
-```
-
----
-
-## ⚙️ Getting Started
-
-### Prerequisites
-- Java 21+
-- PostgreSQL
-- Maven
-- IntelliJ IDEA (recommended)
-
-### 1. Clone the repository
+**1. Clone the repository**
 ```bash
 git clone https://github.com/vyshnaviks05/hospitalManagementSystem.git
 cd hospitalManagementSystem
 ```
 
-### 2. Create the database
+**2. Create the database**
 ```sql
 CREATE DATABASE hospitalDB;
 ```
 
-### 3. Set the environment variable
-
-The database password is read from an environment variable — never hardcoded.
-
-**Option A — IntelliJ IDEA (recommended)**
-1. Go to Run → Edit Configurations
-2. Select your Spring Boot run configuration
-3. Click the browse icon next to Environment variables
-4. Click + and add: `DB_PASSWORD = your_postgres_password`
-5. Click OK → Apply → OK
-
-**Option B — Terminal**
+**3. Set the environment variable**
 ```bash
 # macOS / Linux
 export DB_PASSWORD=your_postgres_password
@@ -484,62 +192,48 @@ export DB_PASSWORD=your_postgres_password
 set DB_PASSWORD=your_postgres_password
 ```
 
-### 4. Run the application
+**4. Run the application**
 ```bash
 ./mvnw spring-boot:run
 ```
 
-The server starts at `http://localhost:8080`. Sample data is loaded automatically via `data.sql`.
+Server starts at `http://localhost:8080`. Seed data (5 patients, 3 doctors, 6 appointments) loads automatically via `data.sql`.
 
-> ⚠️ `spring.jpa.hibernate.ddl-auto=create` drops and recreates the schema on every startup. Switch to `update` or `validate` before deploying to staging or production.
-
----
-
-## 🌱 Seed Data
-
-On startup, `data.sql` populates the database with:
-- 5 patients across various blood groups and demographics
-- 3 doctors across Cardiology, Neurology, and Dermatology
-- 6 appointments linking patients to their respective doctors
+> **⚠️ Note:** `spring.jpa.hibernate.ddl-auto=create` drops and recreates the schema on every startup. Switch to `update` or `validate` before deploying to staging or production.
 
 ---
 
-## 🩸 Blood Group Types
-
-`A_POS` · `A_NEG` · `B_POS` · `B_NEG` · `AB_POS` · `AB_NEG` · `O_POS` · `O_NEG`
-
----
-
-## 🧪 Testing
-
-Integration tests use `@SpringBootTest` to exercise the full application stack against a real PostgreSQL database.
+## Tests
 
 ```bash
 ./mvnw test
 ```
 
 | Test Class | Coverage |
-|-----------|---------|
-| PatientTests | Fetch join query, getPatientById, paginated native query with sorting, ResourceNotFoundException for missing patient |
-| InsuranceTests | Assign insurance, remove insurance, create appointment, reassign appointment to another doctor |
-| HospitalManagementApplicationTests | Application context loads successfully |
+|------------|----------|
+| `PatientTests` | Fetch join query, getPatientById, paginated native query with sorting, ResourceNotFoundException for missing patient |
+| `InsuranceTests` | Assign insurance, remove insurance, create appointment, reassign appointment to another doctor |
+| `HospitalManagementApplicationTests` | Application context loads successfully |
 
 ---
 
-## 🔮 Roadmap
+## Roadmap
 
 - [x] Spring Security with JWT authentication and role-based access control (ADMIN, DOCTOR, PATIENT)
-- [ ] Unit tests for the service layer using Mockito
+- [ ] Unit tests for service layer using Mockito
 - [ ] Automated DTO mapping with MapStruct
 - [ ] Redis caching for frequently accessed data
 - [ ] Swagger / OpenAPI documentation
 
 ---
 
-## 👩‍💻 Author
+<div align="center">
 
 **Kotha Sree Vyshnavi**
 
-💼 [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
-🐙 [GitHub](https://github.com/vyshnaviks05)
-📧 vyshukotha05@gmail.com
+[![Email](https://img.shields.io/badge/Email-D14836?style=flat-square&logo=gmail&logoColor=white)](mailto:vyshukotha05@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/vyshnaviks05)
+
+
+</div>
