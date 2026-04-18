@@ -2,7 +2,7 @@
 
 # 🏥 Hospital Management System
 
-A RESTful backend for managing hospital operations — patients, doctors, appointments, departments, and insurance — built with Java 21 and Spring Boot 3. Secured with JWT-based authentication and role-based access control.
+A RESTful backend for managing hospital operations - patients, doctors, appointments, departments, and insurance - built with Java 21 and Spring Boot 3. Secured with JWT-based authentication and role-based access control.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?style=flat-square&logo=springboot)
@@ -37,13 +37,13 @@ A RESTful backend for managing hospital operations — patients, doctors, appoin
 - Appointment scheduling and doctor reassignment
 - Patient insurance assignment and removal
 - Centralized exception handling with structured field-level error responses
-- BCrypt password encoding — plain-text passwords are never stored
+- BCrypt password encoding - plain-text passwords are never stored
 
 ---
 
 ## Architecture
 
-Standard layered architecture — Controller → Service → Repository. Input and output are decoupled from JPA entities using dedicated DTOs with manual mapper classes. All exceptions are handled centrally via `@RestControllerAdvice`.
+Standard layered architecture - Controller → Service → Repository. Input and output are decoupled from JPA entities using dedicated DTOs with manual mapper classes. All exceptions are handled centrally via `@RestControllerAdvice`.
 
 ```
 src/main/java/com/vyshnavi/dev/hospitalManagement/
@@ -160,11 +160,11 @@ Authorization: Bearer <token>
 
 ## Technical Highlights
 
-- **N+1 prevention** — `LEFT JOIN FETCH` in `findAllPatientsWithAppointments()` loads patients and appointments in a single SQL query instead of one query per patient
-- **Transaction management** — `@Transactional(readOnly = true)` on all read operations disables Hibernate dirty checking; write operations use `@Transactional` for automatic rollback on failure
-- **8 query patterns** in `PatientRepository` — derived methods, JPQL, DTO projections, native SQL with pagination, bulk updates, and fetch joins
-- **Input validation** — Jakarta Bean Validation annotations (`@NotBlank`, `@Email`, `@Past`, `@Future`, `@NotNull`) on all request DTOs with structured field-level error responses
-- **Externalized secrets** — database password is read from `${DB_PASSWORD}` environment variable; never hardcoded
+- **N+1 prevention** - `LEFT JOIN FETCH` in `findAllPatientsWithAppointments()` loads patients and appointments in a single SQL query instead of one query per patient
+- **Transaction management** - `@Transactional(readOnly = true)` on all read operations disables Hibernate dirty checking; write operations use `@Transactional` for automatic rollback on failure
+- **8 query patterns** in `PatientRepository` - derived methods, JPQL, DTO projections, native SQL with pagination, bulk updates, and fetch joins
+- **Input validation** - Jakarta Bean Validation annotations (`@NotBlank`, `@Email`, `@Past`, `@Future`, `@NotNull`) on all request DTOs with structured field-level error responses
+- **Externalized secrets** - database password is read from `${DB_PASSWORD}` environment variable; never hardcoded
 
 ---
 
@@ -232,7 +232,7 @@ Server starts at `http://localhost:8080`. Seed data (5 patients, 3 doctors, 6 ap
 **Kotha Sree Vyshnavi**
 
 [![Email](https://img.shields.io/badge/Email-D14836?style=flat-square&logo=gmail&logoColor=white)](mailto:vyshukotha05@gmail.com)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/vyshnaviks05)
 
 
