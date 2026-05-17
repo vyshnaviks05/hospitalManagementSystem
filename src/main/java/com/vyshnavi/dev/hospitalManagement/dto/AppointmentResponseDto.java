@@ -1,5 +1,6 @@
 package com.vyshnavi.dev.hospitalManagement.dto;
 
+import com.vyshnavi.dev.hospitalManagement.entity.type.AppointmentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,7 @@ public class AppointmentResponseDto {
     private Long id;
     private LocalDateTime appointmentTime;
     private String reason;
+    private AppointmentStatus status;
 
     // Only expose IDs to avoid exposing full nested objects
     private Long patientId;

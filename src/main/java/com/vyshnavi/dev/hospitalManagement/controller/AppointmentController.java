@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -20,6 +21,21 @@ public class AppointmentController {
 
     private final AppointmentService appointmentService;
     private final AppointmentMapper appointmentMapper;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AppointmentResponseDto> getAppointment(@PathVariable Long id) {
+        return ResponseEntity.ok(appointmentService.getAppointmentById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<AppointmentResponseDto>> getAllAppointments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                appointmentService.getAllAppointments(page, size)
+        );
+    }
 
     // POST /api/appointments
     // Creates a new appointment for a given patient and doctor.
@@ -58,6 +74,30 @@ public class AppointmentController {
 
         Appointment updated = appointmentService.reassignAppointmentToAnotherDoctor(id, doctorId);
         return ResponseEntity.ok(appointmentMapper.toResponseDto(updated));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<AppointmentResponseDto> cancelAppointment(
+            @PathVariable Long id) {
+
+        Appointment cancelledAppointment =
+                appointmentService.cancelAppointment(id);
+
+        return ResponseEntity.ok(
+                appointmentMapper.toResponseDto(cancelledAppointment)
+        );
+    }
+
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<AppointmentResponseDto> completeAppointment(
+            @PathVariable Long id) {
+
+        Appointment completedAppointment =
+                appointmentService.completeAppointment(id);
+
+        return ResponseEntity.ok(
+                appointmentMapper.toResponseDto(completedAppointment)
+        );
     }
 }
 

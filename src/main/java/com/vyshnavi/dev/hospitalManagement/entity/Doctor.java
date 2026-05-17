@@ -2,6 +2,9 @@ package com.vyshnavi.dev.hospitalManagement.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.time.LocalDateTime;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,10 +32,20 @@ public class Doctor {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    @Builder.Default
     @ManyToMany(mappedBy = "doctors")
     private Set<Department> departments = new HashSet<>();
 
     // FIX: Appointment has a @ManyToOne to Doctor, so this must be @OneToMany — not @ManyToMany
+    @Builder.Default
     @OneToMany(mappedBy = "doctor")
     private List<Appointment> appointments = new ArrayList<>();
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 }

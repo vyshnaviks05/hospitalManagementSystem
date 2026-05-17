@@ -29,7 +29,8 @@ public class InsuranceService {
         insurance.setPatient(patient);
         patient.setInsurance(insurance);
 
-        return patient;
+        Patient savedPatient = patientRepository.save(patient);
+        return savedPatient;
     }
 
     /**
@@ -43,6 +44,7 @@ public class InsuranceService {
 
         patient.setInsurance(null);
 
-        return patient;
+        Patient savedPatient = patientRepository.save(patient);
+        return savedPatient;
     }
 }
