@@ -1,11 +1,16 @@
 package com.vyshnavi.dev.hospitalManagement.entity;
 
 import com.vyshnavi.dev.hospitalManagement.entity.type.BloodGroupType;
+import com.vyshnavi.dev.hospitalManagement.entity.type.GenderType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,10 +40,12 @@ public class Patient {
     @ToString.Exclude
     private LocalDate birthDate;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    private String gender;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GenderType gender;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -47,9 +54,12 @@ public class Patient {
     @Enumerated(EnumType.STRING)
     private BloodGroupType bloodGroup;
 
-    // Owning side of the OneToOne — holds the foreign key column
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "patient_insurance_id")
+    @OneToOne(
+            cascade = {CascadeType.PERSIST, CascadeType.REMOVE},
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(name = "insurance_id")
     @ToString.Exclude
     private Insurance insurance;
 
@@ -57,4 +67,8 @@ public class Patient {
     @OneToMany(mappedBy = "patient", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     @ToString.Exclude
     private List<Appointment> appointments = new ArrayList<>();
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 }

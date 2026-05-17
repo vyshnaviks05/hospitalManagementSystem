@@ -3,6 +3,7 @@ package com.vyshnavi.dev.hospitalManagement.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,4 +38,8 @@ public class Insurance {
     @OneToOne(mappedBy = "insurance")
     @ToString.Exclude
     private Patient patient;
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 }

@@ -2,18 +2,16 @@ package com.vyshnavi.dev.hospitalManagement.controller;
 
 import com.vyshnavi.dev.hospitalManagement.dto.PatientRequestDto;
 import com.vyshnavi.dev.hospitalManagement.dto.PatientResponseDto;
-import com.vyshnavi.dev.hospitalManagement.entity.Patient;
-import com.vyshnavi.dev.hospitalManagement.mapper.PatientMapper;
 import com.vyshnavi.dev.hospitalManagement.service.PatientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/patients")
@@ -21,43 +19,63 @@ import java.util.stream.Collectors;
 public class PatientController {
 
     private final PatientService patientService;
-    private final PatientMapper patientMapper;
 
     @PostMapping
-    public ResponseEntity<PatientResponseDto> createPatient(@Valid @RequestBody PatientRequestDto dto) {
-        Patient toCreate = patientMapper.toEntity(dto);
-        Patient created = patientService.createPatient(toCreate);
+    public ResponseEntity<PatientResponseDto> createPatient(
+            @Valid @RequestBody PatientRequestDto requestDto) {
+
+        PatientResponseDto createdPatient = patientService.createPatient(requestDto);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(created.getId())
+                .buildAndExpand(createdPatient.getId())
                 .toUri();
 
-        return ResponseEntity.created(location).body(patientMapper.toResponseDto(created));
+        return ResponseEntity.created(location).body(createdPatient);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PatientResponseDto> getPatient(@PathVariable Long id) {
-        Patient patient = patientService.getPatientById(id);
-        return ResponseEntity.ok(patientMapper.toResponseDto(patient));
+        return ResponseEntity.ok(patientService.getPatientById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<PatientResponseDto>> getAllPatients() {
-        List<PatientResponseDto> dtos = patientService.getAllPatients()
-                .stream()
-                .map(patientMapper::toResponseDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
+    public ResponseEntity<Page<PatientResponseDto>> getAllPatients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDirection) {
+
+        return ResponseEntity.ok(
+                patientService.getAllPatients(page, size, sortBy, sortDirection)
+        );
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<PatientResponseDto>> searchPatientsByName(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDirection) {
+
+        return ResponseEntity.ok(
+                patientService.searchPatientsByName(
+                        name,
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection
+                )
+        );
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<PatientResponseDto> updatePatient(
             @PathVariable Long id,
-            @Valid @RequestBody PatientRequestDto dto) {
-        Patient updatedEntity = patientMapper.toEntity(dto);
-        Patient saved = patientService.updatePatient(id, updatedEntity);
-        return ResponseEntity.ok(patientMapper.toResponseDto(saved));
+            @Valid @RequestBody PatientRequestDto requestDto) {
+
+        return ResponseEntity.ok(patientService.updatePatient(id, requestDto));
     }
 
     @DeleteMapping("/{id}")
