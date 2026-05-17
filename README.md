@@ -319,6 +319,5 @@ Seed data (`5 patients`, `3 doctors`, `6 appointments`) loads automatically via 
 
 ## Author
 
-Kotha Sree Vyshnavi
+Kotha Sree Vyshnavi · [Email](mailto:vyshukotha05@gmail.com) · [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/) · [GitHub](https://github.com/vyshnaviks05)
 
-📧 vyshukotha05@gmail.com  [GitHub](https://github.com/vyshnaviks05) • [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
