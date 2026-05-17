@@ -2,7 +2,9 @@
 
 # 🏥 Hospital Management System
 
-A RESTful backend for managing hospital operations - patients, doctors, appointments, departments, and insurance - built with Java 21 and Spring Boot 3. Secured with JWT-based authentication and role-based access control.
+A secure RESTful backend for managing hospital operations — patients, doctors, appointments, departments, and insurance — built with Java 21 and Spring Boot 3.
+
+Secured using JWT-based authentication and role-based access control with a layered backend architecture focused on clean API design, validation, transaction management, and JPA/Hibernate best practices.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?style=flat-square&logo=springboot)
@@ -11,6 +13,22 @@ A RESTful backend for managing hospital operations - patients, doctors, appointm
 ![Maven](https://img.shields.io/badge/Build-Maven-red?style=flat-square&logo=apachemaven)
 
 </div>
+
+---
+
+## Key Concepts Demonstrated
+
+- JWT Authentication & Authorization
+- Role-Based Access Control (RBAC)
+- DTO-Based API Architecture
+- Layered Architecture (Controller → Service → Repository)
+- JPA/Hibernate Entity Relationships
+- Lazy Loading & Fetch Joins
+- Transaction Management
+- Centralized Exception Handling
+- Bean Validation
+- Pagination & Search APIs
+- Environment-Based Secret Management
 
 ---
 
@@ -24,8 +42,8 @@ A RESTful backend for managing hospital operations - patients, doctors, appointm
 | Database | PostgreSQL |
 | Security | Spring Security + JWT (jjwt 0.11.5) |
 | Validation | Jakarta Bean Validation |
-| Boilerplate | Lombok |
-| Build | Maven |
+| Boilerplate Reduction | Lombok |
+| Build Tool | Maven |
 | Testing | Spring Boot Test (JUnit 5) |
 
 ---
@@ -33,173 +51,240 @@ A RESTful backend for managing hospital operations - patients, doctors, appointm
 ## Features
 
 - JWT stateless authentication with role-based access control (`ADMIN`, `DOCTOR`, `PATIENT`)
-- Full CRUD for patients and doctors
-- Appointment scheduling and doctor reassignment
+- Full CRUD for patients and doctors with pagination and search
+- Appointment scheduling with doctor-level conflict detection
+- Appointment status transitions (`SCHEDULED → CANCELLED / COMPLETED`)
+- Doctor reassignment for existing appointments
 - Patient insurance assignment and removal
-- Centralized exception handling with structured field-level error responses
-- BCrypt password encoding - plain-text passwords are never stored
+- Centralized exception handling with structured field-level validation responses
+- BCrypt password encoding — plain-text passwords are never stored
+- Database credentials and JWT secrets externalized via environment variables
 
 ---
 
 ## Architecture
 
-Standard layered architecture - Controller → Service → Repository. Input and output are decoupled from JPA entities using dedicated DTOs with manual mapper classes. All exceptions are handled centrally via `@RestControllerAdvice`.
+The application follows a standard layered backend architecture:
 
+```text
+Client
+  ↓
+JWT Filter
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+PostgreSQL
 ```
+
+Input and output are decoupled from JPA entities using dedicated DTOs and manual mapper classes.
+
+All exceptions are handled centrally using `@RestControllerAdvice`.
+
+### Project Structure
+
+```text
 src/main/java/com/vyshnavi/dev/hospitalManagement/
-├── controller/       # REST endpoints, GlobalExceptionHandler
+├── controller/       # REST endpoints
 ├── security/         # JwtFilter, SecurityConfig, UserDetailsServiceImpl
-├── service/          # Business logic
-├── repository/       # JPQL, native SQL, pagination, bulk updates, fetch joins
-├── entity/           # JPA entities
+├── service/          # Business logic & transaction management
+├── repository/       # Spring Data JPA repositories
+├── entity/           # JPA entities & relationships
 ├── dto/              # Request / response DTOs
 ├── mapper/           # DTO ↔ Entity conversion
-└── exception/        # ResourceNotFoundException
+├── exception/        # Custom exceptions & handlers
+└── config/           # Configuration classes
 ```
 
 ---
 
 ## Entity Relationships
 
-```
+```text
 Patient     ──(1:1)──  Insurance
 Patient     ──(1:N)──  Appointment  ──(N:1)──  Doctor
 Department  ──(M:N)──  Doctor
-Department  ──(1:1)──  Doctor  (head)
 ```
 
 ---
 
 ## API Reference
 
-<details>
-<summary><strong>Auth</strong> — <code>/api/auth</code></summary>
-<br>
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/register` | Register a new user |
-| `POST` | `/login` | Login and receive JWT token |
-
-</details>
-
-<details>
-<summary><strong>Patients</strong> — <code>/api/patients</code></summary>
-<br>
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/` | Create a new patient |
-| `GET` | `/` | Retrieve all patients |
-| `GET` | `/{id}` | Retrieve a patient by ID |
-| `PUT` | `/{id}` | Update patient details |
-| `DELETE` | `/{id}` | Delete a patient |
-
-</details>
-
-<details>
-<summary><strong>Doctors</strong> — <code>/api/doctors</code></summary>
-<br>
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/` | Create a new doctor |
-| `GET` | `/` | Retrieve all doctors |
-| `GET` | `/{id}` | Retrieve a doctor by ID |
-| `PUT` | `/{id}` | Update doctor details |
-| `DELETE` | `/{id}` | Delete a doctor |
-
-</details>
-
-<details>
-<summary><strong>Appointments</strong> — <code>/api/appointments</code></summary>
-<br>
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/` | Create a new appointment |
-| `PATCH` | `/{id}/reassign?doctorId={id}` | Reassign appointment to another doctor |
-
-</details>
-
-<details>
-<summary><strong>Insurance</strong> — <code>/api/patients/{patientId}/insurance</code></summary>
-<br>
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/` | Assign insurance to a patient |
-| `DELETE` | `/` | Remove insurance from a patient |
-
-</details>
+| Domain | Base Path |
+|---|---|
+| Auth | `/api/auth` |
+| Patients | `/api/patients` |
+| Doctors | `/api/doctors` |
+| Appointments | `/api/appointments` |
+| Insurance | `/api/patients/{patientId}/insurance` |
 
 ---
 
 ## Authentication
 
-```bash
-# Register
+```http
+# Register — public endpoint, always creates a PATIENT account
 POST /api/auth/register
-{ "username": "doctor1", "password": "1234", "role": "DOCTOR" }
+{
+  "username": "john",
+  "password": "secret123"
+}
 
 # Login — returns a signed JWT token
 POST /api/auth/login
-{ "username": "doctor1", "password": "1234" }
+{
+  "username": "john",
+  "password": "secret123"
+}
 
 # Use token in all subsequent requests
 Authorization: Bearer <token>
 ```
 
+> Public registration is intentionally restricted to the `PATIENT` role. `ADMIN` and `DOCTOR` accounts are provisioned separately through seed data to prevent unauthorized privilege escalation through public registration.
+
+### Access Matrix
+
 | Role | Access |
-|------|--------|
-| `ADMIN` | All endpoints |
-| `DOCTOR` | Patients, Doctors, Appointments |
-| `PATIENT` | Patients, Appointments |
+|---|---|
+| ADMIN | All endpoints |
+| DOCTOR | Patients, Doctors, Appointments |
+| PATIENT | Patients, Appointments |
 
 ---
 
 ## Technical Highlights
 
-- **N+1 prevention** - `LEFT JOIN FETCH` in `findAllPatientsWithAppointments()` loads patients and appointments in a single SQL query instead of one query per patient
-- **Transaction management** - `@Transactional(readOnly = true)` on all read operations disables Hibernate dirty checking; write operations use `@Transactional` for automatic rollback on failure
-- **8 query patterns** in `PatientRepository` - derived methods, JPQL, DTO projections, native SQL with pagination, bulk updates, and fetch joins
-- **Input validation** - Jakarta Bean Validation annotations (`@NotBlank`, `@Email`, `@Past`, `@Future`, `@NotNull`) on all request DTOs with structured field-level error responses
-- **Externalized secrets** - database password is read from `${DB_PASSWORD}` environment variable; never hardcoded
+### Conflict Detection
+
+`AppointmentService` checks:
+
+```java
+existsByDoctorIdAndAppointmentTime()
+```
+
+before booking appointments to prevent double booking for the same doctor and time slot.
+
+---
+
+### N+1 Query Prevention
+
+`LEFT JOIN FETCH` is used in repository queries such as:
+
+```java
+findAllPatientsWithAppointments()
+```
+
+to load related entities in a single SQL query and avoid N+1 query issues caused by lazy loading.
+
+---
+
+### Hibernate Dirty Checking
+
+Update methods (`updatePatient`, `updateDoctor`) do not explicitly call `save()`.
+
+Entities are loaded inside a transactional context, modified via setters, and Hibernate automatically detects changes and generates the required `UPDATE` SQL during transaction commit.
+
+---
+
+### Transaction Management
+
+- `@Transactional(readOnly = true)` is used for read operations to optimize transaction behavior and avoid unnecessary flushes
+- `@Transactional` is used for write operations to ensure rollback on failure
+
+---
+
+### Input Validation
+
+Jakarta Bean Validation annotations such as:
+
+```java
+@NotBlank
+@Email
+@Past
+@NotNull
+```
+
+are applied to request DTOs with structured field-level validation responses handled via:
+
+```java
+MethodArgumentNotValidException
+```
+
+---
+
+### Externalized Secrets
+
+Database credentials and JWT secrets are read from environment variables:
+
+```text
+DB_PASSWORD
+JWT_SECRET
+```
+
+No secrets are hardcoded in the application.
 
 ---
 
 ## Getting Started
 
-**Prerequisites:** Java 21+, PostgreSQL, Maven
+### Prerequisites
 
-**1. Clone the repository**
+- Java 21+
+- PostgreSQL
+- Maven
+
+---
+
+### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/vyshnaviks05/hospitalManagementSystem.git
 cd hospitalManagementSystem
 ```
 
-**2. Create the database**
+---
+
+### 2. Create the Database
+
 ```sql
 CREATE DATABASE hospitalDB;
 ```
 
-**3. Set the environment variable**
+---
+
+### 3. Set Environment Variables
+
 ```bash
 # macOS / Linux
 export DB_PASSWORD=your_postgres_password
+export JWT_SECRET=your_jwt_secret_minimum_32_characters
 
 # Windows
 set DB_PASSWORD=your_postgres_password
+set JWT_SECRET=your_jwt_secret_minimum_32_characters
 ```
 
-**4. Run the application**
+---
+
+### 4. Run the Application
+
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Server starts at `http://localhost:8080`. Seed data (5 patients, 3 doctors, 6 appointments) loads automatically via `data.sql`.
+Application starts at:
 
-> **⚠️ Note:** `spring.jpa.hibernate.ddl-auto=create` drops and recreates the schema on every startup. Switch to `update` or `validate` before deploying to staging or production.
+```text
+http://localhost:8080
+```
+
+Seed data (`5 patients`, `3 doctors`, `6 appointments`) loads automatically via `data.sql`.
+
+> ⚠️ `spring.jpa.hibernate.ddl-auto=create` is intentionally configured for local development and recreates the schema on startup. Use `update`, `validate`, or database migrations before deploying to shared or production environments.
 
 ---
 
@@ -210,30 +295,30 @@ Server starts at `http://localhost:8080`. Seed data (5 patients, 3 doctors, 6 ap
 ```
 
 | Test Class | Coverage |
-|------------|----------|
-| `PatientTests` | Fetch join query, getPatientById, paginated native query with sorting, ResourceNotFoundException for missing patient |
-| `InsuranceTests` | Assign insurance, remove insurance, create appointment, reassign appointment to another doctor |
-| `HospitalManagementApplicationTests` | Application context loads successfully |
+|---|---|
+| `PatientTests` | Paginated fetch, search functionality |
+| `InsuranceTests` | Insurance assignment/removal, appointment workflows |
+| `HospitalManagementApplicationTests` | Application context loading |
 
 ---
 
 ## Roadmap
 
-- [x] Spring Security with JWT authentication and role-based access control (ADMIN, DOCTOR, PATIENT)
+- [x] JWT authentication & role-based authorization
+- [x] Appointment conflict detection
+- [x] Structured exception handling
+- [x] Pagination & search endpoints
 - [ ] Unit tests for service layer using Mockito
-- [ ] Automated DTO mapping with MapStruct
-- [ ] Redis caching for frequently accessed data
 - [ ] Swagger / OpenAPI documentation
+- [ ] Refresh token implementation
+- [ ] Redis caching
+- [ ] Flyway database migrations
+- [ ] Docker support
 
 ---
 
-<div align="center">
+## Author
 
-**Kotha Sree Vyshnavi**
+Kotha Sree Vyshnavi
 
-[![Email](https://img.shields.io/badge/Email-D14836?style=flat-square&logo=gmail&logoColor=white)](mailto:vyshukotha05@gmail.com)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/vyshnaviks05)
-
-
-</div>
+📧 vyshukotha05@gmail.com  [GitHub](https://github.com/vyshnaviks05) • [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/)
