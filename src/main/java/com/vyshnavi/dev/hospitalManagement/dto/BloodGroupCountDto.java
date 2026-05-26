@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Renamed from BloodGroupCountResponseEntity — avoids confusion with Spring's ResponseEntity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
