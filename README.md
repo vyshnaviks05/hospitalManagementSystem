@@ -11,6 +11,7 @@ Secured using JWT-based authentication and role-based access control with a laye
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-blue?style=flat-square&logo=postgresql)
 ![JWT](https://img.shields.io/badge/Auth-JWT-black?style=flat-square&logo=jsonwebtokens)
 ![Maven](https://img.shields.io/badge/Build-Maven-red?style=flat-square&logo=apachemaven)
+![Docker](https://img.shields.io/badge/Docker-supported-2496ED?style=flat-square&logo=docker)
 
 </div>
 
@@ -44,6 +45,7 @@ Secured using JWT-based authentication and role-based access control with a laye
 | Validation | Jakarta Bean Validation |
 | Boilerplate Reduction | Lombok |
 | Build Tool | Maven |
+| Containerization | Docker + Docker Compose |
 | Testing | Spring Boot Test (JUnit 5) |
 
 ---
@@ -233,13 +235,20 @@ No secrets are hardcoded in the application.
 
 ### Prerequisites
 
+**To run locally:**
 - Java 21+
 - PostgreSQL
 - Maven
 
+**To run with Docker:**
+- Docker
+- Docker Compose
+
 ---
 
-### 1. Clone the Repository
+### Option A — Run Locally
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/vyshnaviks05/hospitalManagementSystem.git
@@ -248,7 +257,7 @@ cd hospitalManagementSystem
 
 ---
 
-### 2. Create the Database
+#### 2. Create the Database
 
 ```sql
 CREATE DATABASE hospitalDB;
@@ -256,7 +265,7 @@ CREATE DATABASE hospitalDB;
 
 ---
 
-### 3. Set Environment Variables
+#### 3. Set Environment Variables
 
 ```bash
 # macOS / Linux
@@ -270,11 +279,67 @@ set JWT_SECRET=your_jwt_secret_minimum_32_characters
 
 ---
 
-### 4. Run the Application
+#### 4. Run the Application
 
 ```bash
 ./mvnw spring-boot:run
 ```
+
+---
+
+### Option B — Run with Docker
+
+#### 1. Clone the Repository
+
+```bash
+git clone https://github.com/vyshnaviks05/hospitalManagementSystem.git
+cd hospitalManagementSystem
+```
+
+---
+
+#### 2. Create a `.env` File
+
+Create a `.env` file in the project root (already git-ignored):
+
+```env
+DB_PASSWORD=your_postgres_password
+JWT_SECRET=your_jwt_secret_minimum_32_characters
+```
+
+---
+
+#### 3. Build the JAR
+
+```bash
+./mvnw clean package -DskipTests
+```
+
+---
+
+#### 4. Start the Containers
+
+```bash
+docker compose up --build
+```
+
+This starts two containers:
+- `hms-postgres` — PostgreSQL 17 with a persistent named volume
+- `hms-app` — the Spring Boot application, connected via the internal Docker network
+
+---
+
+#### 5. Stop the Containers
+
+```bash
+# Stop containers
+docker compose down
+
+# Stop and remove the database volume
+docker compose down -v
+```
+
+---
 
 Application starts at:
 
@@ -308,16 +373,15 @@ Seed data (`5 patients`, `3 doctors`, `6 appointments`) loads automatically via 
 - [x] Appointment conflict detection
 - [x] Structured exception handling
 - [x] Pagination & search endpoints
+- [x] Docker support
 - [ ] Unit tests for service layer using Mockito
 - [ ] Swagger / OpenAPI documentation
 - [ ] Refresh token implementation
 - [ ] Redis caching
 - [ ] Flyway database migrations
-- [ ] Docker support
 
 ---
 
 ## Author
 
-Kotha Sree Vyshnavi · [Email](mailto:vyshukotha05@gmail.com) · [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi-438736277/) · [GitHub](https://github.com/vyshnaviks05)
-
+Kotha Sree Vyshnavi · [Email](mailto:vyshukotha05@gmail.com) · [LinkedIn](https://www.linkedin.com/in/kotha-sree-vyshnavi/) · [GitHub](https://github.com/vyshnaviks05)
