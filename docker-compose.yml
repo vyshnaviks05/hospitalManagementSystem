@@ -1,0 +1,27 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: hms-postgres
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: hospitalDB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  hms-app:
+    build: .
+    container_name: hms-app
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/hospitalDB
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
